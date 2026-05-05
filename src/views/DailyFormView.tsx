@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MEMBERS, Status, Situation, STATUS_BG, SITUATION_BG, RosterMember } from '../types';
+import { formatJapaneseDate } from '../utils/date';
 
-const STATUSES: Status[]    = ['未着手', '進行中', '完了待ち', '完了'];
+const STATUSES: Status[]      = ['未着手', '進行中', '完了待ち', '完了'];
 const SITUATIONS: Situation[] = ['未着手', '対応中', '提案済み', '完了'];
 
 const STATUS_HINT: Record<Status, string> = {
@@ -11,17 +12,70 @@ const STATUS_HINT: Record<Status, string> = {
   '完了':    '本日の目標達成',
 };
 
-export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
-  const [member,     setMember]     = useState(roster[0]?.name ?? '鈴木 花子');
-  const [status,     setStatus]     = useState<Status>('進行中');
-  const [custSits,   setCustSits]   = useState<Record<string, Situation>>({});
-  const [summary,    setSummary]    = useState('');
-  const [submitted,  setSubmitted]  = useState(false);
+const draftKey = (name: string) => `daily-draft-${name}`;
 
-  const selectedMember = MEMBERS.find(m => m.name === member) ?? MEMBERS[1];
+interface DraftData {
+  status: Status;
+  custSits: Record<string, Situation>;
+  summary: string;
+}
+
+export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
+  const [member,    setMember]    = useState(roster[0]?.name ?? '');
+  const [status,    setStatus]    = useState<Status>('進行中');
+  const [custSits,  setCustSits]  = useState<Record<string, Situation>>({});
+  const [summary,   setSummary]   = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [toast,     setToast]     = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  // メンバー切替時にドラフトを復元、なければリセット
+  useEffect(() => {
+    if (!member) return;
+    const raw = localStorage.getItem(draftKey(member));
+    if (raw) {
+      try {
+        const d: DraftData = JSON.parse(raw);
+        setStatus(d.status ?? '進行中');
+        setCustSits(d.custSits ?? {});
+        setSummary(d.summary ?? '');
+        showToast('下書きを読み込みました');
+      } catch {
+        resetForm();
+      }
+    } else {
+      resetForm();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member]);
+
+  const resetForm = () => {
+    setStatus('進行中');
+    setCustSits({});
+    setSummary('');
+  };
 
   const setSituation = (cust: string, sit: Situation) =>
     setCustSits(prev => ({ ...prev, [cust]: sit }));
+
+  const saveDraft = () => {
+    const data: DraftData = { status, custSits, summary };
+    localStorage.setItem(draftKey(member), JSON.stringify(data));
+    showToast('下書きを保存しました');
+  };
+
+  const handleSubmit = () => {
+    localStorage.removeItem(draftKey(member));
+    setSubmitted(true);
+  };
+
+  // 週次計画があればそこから取る。なければ静的サンプルデータで代替
+  const memberData    = MEMBERS.find(m => m.name === member);
+  const customerList  = memberData?.customers ?? [];
 
   if (submitted) {
     return (
@@ -33,7 +87,8 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         </div>
         <h2 className="text-xl font-bold text-slate-800">送信しました</h2>
         <p className="text-slate-500 text-sm">ダッシュボードに反映されました。20:00 に自動でEmail送信されます。</p>
-        <button onClick={() => { setSubmitted(false); setSummary(''); }}
+        <button
+          onClick={() => { setSubmitted(false); resetForm(); }}
           className="mt-4 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">
           入力フォームに戻る
         </button>
@@ -42,7 +97,14 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8 max-w-2xl relative">
+      {/* トースト通知 */}
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-fade-in">
+          {toast}
+        </div>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">日次活動レポート　入力フォーム</h1>
         <p className="mt-1 text-sm text-slate-500">退勤前または顧客対応後に入力。所要時間の目安: 1〜2分</p>
@@ -63,7 +125,9 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500">氏名 <span className="text-slate-400 font-normal">（自動入力）</span></label>
-            <select value={member} onChange={e => setMember(e.target.value)}
+            <select
+              value={member}
+              onChange={e => setMember(e.target.value)}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
               {roster.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
             </select>
@@ -71,7 +135,7 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500">日付</label>
             <div className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-500 bg-slate-50">
-              2026年5月5日（火）　自動入力
+              {formatJapaneseDate()}　自動入力
             </div>
           </div>
         </div>
@@ -86,8 +150,8 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
                 onClick={() => setStatus(s)}
                 className={`p-3 rounded-lg border-2 text-left transition-all ${
                   status === s
-                    ? `border-slate-800 bg-slate-800 text-white`
-                    : `border-slate-200 hover:border-slate-400`
+                    ? 'border-slate-800 bg-slate-800 text-white'
+                    : 'border-slate-200 hover:border-slate-400'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -107,31 +171,37 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         <h2 className="text-base font-semibold text-slate-800 border-b border-slate-200 pb-2">今週の顧客対応状況</h2>
         <p className="text-sm text-slate-500">週次計画で登録した顧客が自動表示されます。現在の状況を選択してください。</p>
 
-        <div className="space-y-3">
-          {selectedMember.customers.map(c => {
-            const current = custSits[c.name] ?? c.situation;
-            return (
-              <div key={c.name} className="flex items-start gap-4">
-                <span className="text-sm font-semibold text-slate-700 w-12 pt-2">{c.name}</span>
-                <div className="flex flex-wrap gap-2">
-                  {SITUATIONS.map(sit => (
-                    <button
-                      key={sit}
-                      onClick={() => setSituation(c.name, sit)}
-                      className={`status-pill transition-all border-2 ${
-                        current === sit
-                          ? `${SITUATION_BG[sit]} border-current`
-                          : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400'
-                      }`}
-                    >
-                      {sit}
-                    </button>
-                  ))}
+        {customerList.length === 0 ? (
+          <p className="text-sm text-slate-400 italic">
+            週次計画フォームで顧客を登録すると、ここに表示されます。
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {customerList.map(c => {
+              const current = custSits[c.name] ?? c.situation;
+              return (
+                <div key={c.name} className="flex items-start gap-4">
+                  <span className="text-sm font-semibold text-slate-700 w-12 pt-2">{c.name}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {SITUATIONS.map(sit => (
+                      <button
+                        key={sit}
+                        onClick={() => setSituation(c.name, sit)}
+                        className={`status-pill transition-all border-2 ${
+                          current === sit
+                            ? `${SITUATION_BG[sit]} border-current`
+                            : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400'
+                        }`}
+                      >
+                        {sit}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
         <p className="text-xs text-slate-400">※ 顧客リストは週次計画フォームから管理できます。</p>
       </section>
 
@@ -153,11 +223,14 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
       {/* SUBMIT */}
       <section className="space-y-3 pb-8">
         <div className="flex gap-3">
-          <button onClick={() => setSubmitted(true)}
+          <button
+            onClick={handleSubmit}
             className="px-5 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors">
             送信する
           </button>
-          <button className="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:border-slate-400 transition-colors">
+          <button
+            onClick={saveDraft}
+            className="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:border-slate-400 transition-colors">
             下書き保存
           </button>
         </div>

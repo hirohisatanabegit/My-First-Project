@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MEMBERS, Member, Status, SITUATION_BG, STATUS_BORDER, STATUS_ROW, RosterMember } from '../types';
+import { formatJapaneseDate, formatTime } from '../utils/date';
 import StatusPill from '../components/StatusPill';
 import DonutChart from '../components/DonutChart';
 
@@ -201,6 +202,12 @@ function Page2({ counts, total, activeMembers }: {
 export default function DashboardView({ roster }: { roster: RosterMember[] }) {
   const [page,   setPage]   = useState(0);
   const [filter, setFilter] = useState<Status | 'すべて'>('すべて');
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const activeMembers = buildActiveMembers(roster);
 
@@ -220,7 +227,7 @@ export default function DashboardView({ roster }: { roster: RosterMember[] }) {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">営業活動 日次シグナルボード</h1>
           <p className="mt-1 text-sm text-slate-500">
-            2026年5月5日（火）　集計: 14:30　対象: {total}名
+            {formatJapaneseDate(now)}　集計: {formatTime(now)}　対象: {total}名
           </p>
         </div>
         <div className="text-right space-y-2">

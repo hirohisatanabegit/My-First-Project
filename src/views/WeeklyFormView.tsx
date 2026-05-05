@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MEMBERS, Priority, RosterMember } from '../types';
 import StatusPill from '../components/StatusPill';
 
@@ -22,8 +22,10 @@ const DEFAULT_TASK = (): TaskRow => ({ description: '', category: '資料作成�
 const INPUT_CLS = 'border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300';
 const SELECT_CLS = INPUT_CLS;
 
+const WEEKLY_DRAFT_KEY = (name: string) => `weekly-draft-${name}`;
+
 export default function WeeklyFormView({ roster, goalOptions }: { roster: RosterMember[]; goalOptions: string[] }) {
-  const [member,     setMember]     = useState(roster[0]?.name ?? '鈴木 花子');
+  const [member,     setMember]     = useState(roster[0]?.name ?? '');
   const [customers,  setCustomers]  = useState<CustomerRow[]>([
     { name: 'C社', goal: goalOptions[2] ?? goalOptions[0], priority: '高' },
     { name: 'D社', goal: goalOptions[0],                   priority: '中' },
@@ -33,6 +35,38 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
   ]);
   const [theme,      setTheme]      = useState('');
   const [submitted,  setSubmitted]  = useState(false);
+  const [toast,      setToast]      = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  // メンバー切替時にドラフトを復元
+  useEffect(() => {
+    if (!member) return;
+    const raw = localStorage.getItem(WEEKLY_DRAFT_KEY(member));
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        if (d.customers) setCustomers(d.customers);
+        if (d.tasks)     setTasks(d.tasks);
+        if (d.theme !== undefined) setTheme(d.theme);
+        showToast('下書きを読み込みました');
+      } catch { /* ignore */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member]);
+
+  const saveDraft = () => {
+    localStorage.setItem(WEEKLY_DRAFT_KEY(member), JSON.stringify({ customers, tasks, theme }));
+    showToast('下書きを保存しました');
+  };
+
+  const handleSubmit = () => {
+    localStorage.removeItem(WEEKLY_DRAFT_KEY(member));
+    setSubmitted(true);
+  };
 
   // 顧客行の操作
   const updateCustomer = (i: number, field: keyof CustomerRow, value: string) =>
@@ -68,7 +102,13 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8 max-w-2xl relative">
+      {/* トースト通知 */}
+      {toast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg">
+          {toast}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">週次計画　入力フォーム</h1>
         <p className="mt-1 text-sm text-slate-500">毎週月曜日の朝に1回入力。この計画が今週の日次フォームに自動反映されます。</p>
@@ -278,11 +318,12 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
       {/* SUBMIT */}
       <section className="space-y-3 pb-8">
         <div className="flex gap-3">
-          <button onClick={() => setSubmitted(true)}
+          <button onClick={handleSubmit}
             className="px-5 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors">
             週次計画を登録する
           </button>
-          <button className="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:border-slate-400 transition-colors">
+          <button onClick={saveDraft}
+            className="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:border-slate-400 transition-colors">
             下書き保存
           </button>
         </div>

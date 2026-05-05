@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Status, RosterMember } from '../types';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const INITIAL_STATUSES: { key: Status; label: string; description: string; color: string }[] = [
   { key: '未着手',  label: '未着手',  description: '当日の活動記録なし・未対応',       color: 'bg-slate-100 text-slate-600' },
@@ -56,11 +57,11 @@ export default function SettingsView({
   const [newRole, setNewRole] = useState('ミドル');
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // レポート設定
-  const [reportTime,   setReportTime]   = useState('20:00');
-  const [emailTo,      setEmailTo]      = useState('manager@company.co.jp\nceo@company.co.jp');
-  const [emailSubject, setEmailSubject] = useState('【営業活動】日次シグナルボード {date}');
-  const [autoCapture,  setAutoCapture]  = useState(true);
+  // レポート設定（localStorage 永続化）
+  const [reportTime,   setReportTime]   = useLocalStorage('cfg-reportTime',   '20:00');
+  const [emailTo,      setEmailTo]      = useLocalStorage('cfg-emailTo',      'manager@company.co.jp\nceo@company.co.jp');
+  const [emailSubject, setEmailSubject] = useLocalStorage('cfg-emailSubject', '【営業活動】日次シグナルボード {date}');
+  const [autoCapture,  setAutoCapture]  = useLocalStorage<boolean>('cfg-autoCapture', true);
 
   // ステータス設定（説明文のみ編集可）
   const [statusDefs, setStatusDefs] = useState(INITIAL_STATUSES);

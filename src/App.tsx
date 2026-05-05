@@ -4,6 +4,7 @@ import WeeklyFormView from './views/WeeklyFormView';
 import DailyFormView from './views/DailyFormView';
 import SettingsView from './views/SettingsView';
 import { RosterMember, DEFAULT_ROSTER } from './types';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 type Tab = 'dashboard' | 'weekly' | 'daily' | 'settings';
 
@@ -61,9 +62,9 @@ const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
 ];
 
 export default function App() {
-  const [tab, setTab]           = useState<Tab>('dashboard');
-  const [goalOptions, setGoalOptions] = useState<string[]>(DEFAULT_GOAL_OPTIONS);
-  const [roster, setRoster]     = useState<RosterMember[]>(DEFAULT_ROSTER);
+  const [tab, setTab] = useState<Tab>('dashboard');
+  const [goalOptions, setGoalOptions] = useLocalStorage<string[]>('goalOptions', DEFAULT_GOAL_OPTIONS);
+  const [roster, setRoster]     = useLocalStorage<RosterMember[]>('roster', DEFAULT_ROSTER);
 
   return (
     <div className="min-h-screen bg-slate-50">
