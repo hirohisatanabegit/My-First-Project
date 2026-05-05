@@ -17,14 +17,23 @@
 
 import puppeteer from 'puppeteer';
 import sgMail from '@sendgrid/mail';
+import { readFileSync } from 'fs';
 
-// ── 設定値の読み込み ──────────────────────────────────────
+// ── 設定値の読み込み（report-config.json → 環境変数 の順で優先）──────────
+let fileConfig = {};
+try {
+  fileConfig = JSON.parse(readFileSync('./report-config.json', 'utf-8'));
+  console.log('📄 report-config.json を読み込みました');
+} catch {
+  console.log('📄 report-config.json が見つかりません。環境変数を使用します。');
+}
+
 const SITE_URL         = process.env.SITE_URL || 'https://hirohisatanabegit.github.io/My-First-Project/';
 const APP_PASSCODE     = process.env.APP_PASSCODE || '0000';
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const EMAIL_FROM       = process.env.EMAIL_FROM;
-const EMAIL_TO         = (process.env.EMAIL_TO || '').split(',').map(e => e.trim()).filter(Boolean);
-const TEAM_ID          = process.env.TEAM_ID || '';
+const EMAIL_FROM       = fileConfig.emailFrom  || process.env.EMAIL_FROM;
+const EMAIL_TO         = fileConfig.emailTo    || (process.env.EMAIL_TO || '').split(',').map(e => e.trim()).filter(Boolean);
+const TEAM_ID          = process.env.TEAM_ID   || '';
 
 // 日本時間で日付・時刻フォーマット
 const now      = new Date();
@@ -41,7 +50,7 @@ const dateKey  = now.toLocaleDateString('ja-JP', {
   timeZone: 'Asia/Tokyo',
 }).replaceAll('/', '-');
 
-const EMAIL_SUBJECT = (process.env.EMAIL_SUBJECT || '【営業活動】日次シグナルボード {date}')
+const EMAIL_SUBJECT = (fileConfig.emailSubject || process.env.EMAIL_SUBJECT || '【営業活動】日次シグナルボード {date}')
   .replace('{date}', dateStr);
 
 // ── バリデーション ────────────────────────────────────────

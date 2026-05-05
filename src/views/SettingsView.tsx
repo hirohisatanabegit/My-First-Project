@@ -94,6 +94,68 @@ export default function SettingsView({
     setLocalGoals(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; });
   };
 
+  // GitHub 連携設定
+  const [githubPat,  setGithubPat]  = useLocalStorage('cfg-github-pat', '');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncError,  setSyncError]  = useState('');
+
+  const OWNER = 'hirohisatanabegit';
+  const REPO  = 'My-First-Project';
+  const CONFIG_PATH = 'scripts/report-config.json';
+
+  const syncToGitHub = async () => {
+    if (!githubPat.trim()) { setSyncError('GitHub トークンを入力してください。'); setSyncStatus('error'); return; }
+    setSyncStatus('syncing');
+    setSyncError('');
+
+    const config = {
+      emailTo:      emailTo.split('\n').map(e => e.trim()).filter(Boolean),
+      emailSubject,
+    };
+
+    try {
+      // 現在のファイル SHA を取得
+      const getRes = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${CONFIG_PATH}`,
+        { headers: { Authorization: `Bearer ${githubPat}`, Accept: 'application/vnd.github.v3+json' } },
+      );
+      let sha: string | undefined;
+      if (getRes.ok) { sha = (await getRes.json()).sha; }
+
+      // base64 エンコード（日本語対応）
+      const jsonStr = JSON.stringify(config, null, 2);
+      const bytes   = new TextEncoder().encode(jsonStr);
+      const content = btoa(String.fromCharCode(...bytes));
+
+      const putRes = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/contents/${CONFIG_PATH}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${githubPat}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/vnd.github.v3+json',
+          },
+          body: JSON.stringify({
+            message: '設定ページからメールレポート設定を更新',
+            content,
+            sha,
+          }),
+        },
+      );
+
+      if (!putRes.ok) {
+        const err = await putRes.json();
+        throw new Error(err.message || 'GitHub API エラー');
+      }
+      setSyncStatus('success');
+      setTimeout(() => setSyncStatus('idle'), 4000);
+    } catch (e) {
+      setSyncStatus('error');
+      setSyncError(e instanceof Error ? e.message : '不明なエラーが発生しました');
+    }
+  };
+
   // パスコード設定
   const [passcode,    setPasscode]    = useLocalStorage('cfg-passcode',    '0000');
   const [newPasscode, setNewPasscode] = useState('');
@@ -274,6 +336,59 @@ export default function SettingsView({
             <p className="font-semibold text-slate-700">現在の設定プレビュー</p>
             <p>送信: 毎日 {reportTime}　|　自動スクリーンショット: {autoCapture ? '有効' : '無効'}</p>
             <p>宛先: {emailTo.split('\n').filter(Boolean).join('、')}</p>
+          </div>
+
+          {/* GitHub 同期 */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              <p className="text-sm font-semibold text-blue-800">GitHub に設定を反映する</p>
+            </div>
+            <p className="text-xs text-blue-700">
+              上記の宛先・件名の変更を GitHub に自動コミットします。次回の自動送信から反映されます。
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">
+                GitHub Personal Access Token
+                <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=Sales+Dashboard" target="_blank" rel="noopener noreferrer"
+                  className="ml-2 text-blue-600 hover:underline font-normal">（新規作成）</a>
+              </label>
+              <input
+                type="password"
+                value={githubPat}
+                onChange={e => { setGithubPat(e.target.value); setSyncStatus('idle'); }}
+                placeholder="ghp_xxxxxxxxxxxx"
+                className={`w-full ${INPUT_CLS}`}
+              />
+              <p className="text-xs text-slate-400">
+                必要な権限: <code className="bg-slate-100 px-1 rounded">public_repo</code>　ブラウザのみに保存されます。
+              </p>
+            </div>
+
+            <button
+              onClick={syncToGitHub}
+              disabled={syncStatus === 'syncing'}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 disabled:opacity-60 transition-colors">
+              {syncStatus === 'syncing' ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  反映中...
+                </>
+              ) : 'GitHubに反映する'}
+            </button>
+
+            {syncStatus === 'success' && (
+              <p className="text-xs text-green-700 font-medium">✅ GitHub に反映しました。次回の自動送信から新しい宛先が使われます。</p>
+            )}
+            {syncStatus === 'error' && (
+              <p className="text-xs text-red-600 font-medium">❌ {syncError}</p>
+            )}
           </div>
         </div>
       </SectionCard>
