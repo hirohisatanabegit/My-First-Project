@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>営業活動管理ツール 制作の裏側</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+  * { font-family: 'Noto Sans JP', sans-serif; box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0f172a; }
+  .slide { display: none; width: 100vw; height: 100vh; }
+  .slide.active { display: flex; flex-direction: column; }
+  .fade-in { animation: fadeIn .45s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .dot { width:10px; height:10px; border-radius:50%; background:#334155; cursor:pointer; transition:.2s; }
+  .dot.active { background:#3b82f6; transform:scale(1.35); }
+  .tag { display:inline-block; padding:3px 12px; border-radius:999px; font-size:12px; font-weight:700; }
+  .card { background:#fff; border-radius:12px; overflow:hidden; }
+  .accent-bar { width:6px; border-radius:3px 0 0 3px; flex-shrink:0; }
+  img.ss { border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,.35); object-fit:cover; }
+  .annot { background:#fff; border-radius:10px; padding:12px 14px; border-left:4px solid #3b82f6; }
+</style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 1: タイトル
+────────────────────────────────────────────────────── -->
+<section class="slide active fade-in" style="background:linear-gradient(135deg,#0f172a 60%,#1e3a5f);">
+  <div class="flex flex-col items-center justify-center h-full gap-5 px-8">
+    <div class="flex items-center gap-3 mb-2">
+      <span class="tag" style="background:#1d4ed8;color:#fff;font-size:14px;">🛠  AI × ノーコード 内製ツール</span>
+    </div>
+    <h1 class="text-center font-black leading-tight" style="font-size:clamp(32px,5vw,60px);color:#fff;">
+      営業活動管理ツール
+    </h1>
+    <h2 class="text-center font-bold" style="font-size:clamp(20px,3.5vw,42px);color:#3b82f6;">
+      制作の裏側
+    </h2>
+    <p class="text-center" style="color:#94a3b3;font-size:16px;max-width:600px;line-height:1.8;">
+      きっかけ・設計の工夫・苦労したこと<br>やってみて気づいたこと
+    </p>
+    <div style="margin-top:24px;padding:16px 36px;background:#1e293b;border-radius:12px;color:#64748b;font-size:13px;text-align:center;">
+      🌐 <span style="color:#3b82f6;">https://hirohisatanabegit.github.io/My-First-Project/</span><br>
+      <span style="font-size:11px;">← ツール本体のURL</span>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 2: なぜ作ったか
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#f8fafc;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e293b;border-radius:12px;padding:14px 24px;margin-bottom:20px;">
+      <p class="text-white font-bold" style="font-size:22px;">なぜ作ったのか</p>
+      <p style="color:#94a3b3;font-size:13px;">解決したかった4つの課題</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4 flex-1" style="min-height:0;">
+      <div class="card flex overflow-hidden">
+        <div class="accent-bar" style="background:#3b82f6;"></div>
+        <div class="p-5 flex flex-col gap-2">
+          <span style="font-size:28px;">📋</span>
+          <p class="font-bold" style="font-size:16px;color:#1e293b;">報告の習慣化</p>
+          <p style="color:#64748b;font-size:13px;line-height:1.7;">メンバーが日々の活動を一定の<br>フォーマットで記録する習慣を<br>チームに根付かせたかった</p>
+        </div>
+      </div>
+      <div class="card flex overflow-hidden">
+        <div class="accent-bar" style="background:#10b981;"></div>
+        <div class="p-5 flex flex-col gap-2">
+          <span style="font-size:28px;">🔔</span>
+          <p class="font-bold" style="font-size:16px;color:#1e293b;">フィードバック漏れをなくす</p>
+          <p style="color:#64748b;font-size:13px;line-height:1.7;">報告内容を記録しておき<br>リーダーから全員に<br>確実にフィードバックを届けたい</p>
+        </div>
+      </div>
+      <div class="card flex overflow-hidden">
+        <div class="accent-bar" style="background:#f59e0b;"></div>
+        <div class="p-5 flex flex-col gap-2">
+          <span style="font-size:28px;">✅</span>
+          <p class="font-bold" style="font-size:16px;color:#1e293b;">TODOのフォロー</p>
+          <p style="color:#64748b;font-size:13px;line-height:1.7;">週次・日次のTODOをリーダーが示し<br>進捗を見える化して<br>メンバーを支援したい</p>
+        </div>
+      </div>
+      <div class="card flex overflow-hidden">
+        <div class="accent-bar" style="background:#8b5cf6;"></div>
+        <div class="p-5 flex flex-col gap-2">
+          <span style="font-size:28px;">📊</span>
+          <p class="font-bold" style="font-size:16px;color:#1e293b;">毎日の状況を自動確認</p>
+          <p style="color:#64748b;font-size:13px;line-height:1.7;">集計・報告の手間なく<br>全員の状況をリアルタイムで<br>毎日確認できるようにしたい</p>
+        </div>
+      </div>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:14px 24px;margin-top:16px;text-align:center;">
+      <span style="color:#fff;font-size:15px;font-weight:700;">⚡ これらをまとめて解決するツールを、AIの力を借りてゼロから内製した</span>
+      <span style="margin-left:24px;color:#f59e0b;font-size:13px;">開発期間: 1日 ／ 費用: $0（GitHub Pages で無料公開）</span>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 3: ツール画面 ダッシュボード
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#f8fafc;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e293b;border-radius:12px;padding:14px 24px;margin-bottom:16px;">
+      <p class="text-white font-bold" style="font-size:22px;">ツール紹介①　ダッシュボード</p>
+      <p style="color:#94a3b3;font-size:13px;">管理者・メンバー全員が確認できるリアルタイム画面</p>
+    </div>
+    <div class="flex gap-5 flex-1" style="min-height:0;">
+      <div style="flex:2;min-width:0;">
+        <img src="./screenshots/dashboard.png" class="ss w-full h-full" style="object-fit:contain;max-height:calc(100vh - 180px);">
+      </div>
+      <div class="flex flex-col gap-3" style="flex:0 0 260px;">
+        <div class="annot" style="border-color:#3b82f6;">
+          <p class="font-bold" style="color:#3b82f6;font-size:13px;">🔢 4色チームシグナル</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">未着手・進行中・完了待ち・完了を色別にカウント。全体の状況が一瞬で把握できる</p>
+        </div>
+        <div class="annot" style="border-color:#10b981;">
+          <p class="font-bold" style="color:#10b981;font-size:13px;">👤 メンバーカード</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">各自の顧客状況と今日の活動サマリーが一覧表示。クリックでフィルター可能</p>
+        </div>
+        <div class="annot" style="border-color:#f59e0b;">
+          <p class="font-bold" style="color:#f59e0b;font-size:13px;">🔄 リアルタイム反映</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">メンバーが送信ボタンを押した瞬間、ダッシュボードに反映される</p>
+        </div>
+        <div class="annot" style="border-color:#8b5cf6;">
+          <p class="font-bold" style="color:#8b5cf6;font-size:13px;">📧 毎日20:00 自動送信</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">この画面が自動でスクリーンショット撮影され、指定アドレスへメール送信される</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 4: メールで届くレポート
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#0f172a;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e3a5f;border:1px solid #1d4ed8;border-radius:12px;padding:14px 24px;margin-bottom:16px;">
+      <p class="font-bold" style="color:#fff;font-size:22px;">📧 毎日20:00 にメールで届くレポート</p>
+      <p style="color:#94a3b3;font-size:13px;">GitHub Actions が自動でスクリーンショットを撮影し、指定アドレスへ添付送信する</p>
+    </div>
+    <div class="flex gap-4 flex-1" style="min-height:0;">
+      <!-- メール本文イメージ -->
+      <div style="flex:0 0 260px;background:#1e293b;border-radius:12px;padding:16px;font-size:12px;color:#94a3b3;">
+        <div style="border-bottom:1px solid #334155;padding-bottom:10px;margin-bottom:10px;">
+          <p style="color:#64748b;font-size:11px;">差出人</p>
+          <p style="color:#e2e8f0;">hirohisa.tanabe@gmail.com</p>
+        </div>
+        <div style="border-bottom:1px solid #334155;padding-bottom:10px;margin-bottom:10px;">
+          <p style="color:#64748b;font-size:11px;">件名</p>
+          <p style="color:#e2e8f0;">【営業活動】日次シグナルボード<br>2026年5月5日（火）</p>
+        </div>
+        <div style="margin-bottom:12px;">
+          <p style="color:#64748b;font-size:11px;">本文</p>
+          <p style="color:#e2e8f0;line-height:1.7;margin-top:4px;">お疲れ様です。<br>本日の営業活動レポートをお送りします。</p>
+        </div>
+        <div>
+          <p style="color:#64748b;font-size:11px;margin-bottom:6px;">📎 添付ファイル</p>
+          <div style="background:#0f172a;border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+            <span>🖼</span><span style="color:#3b82f6;font-size:11px;">sales-report-2026-05-05-p1.png</span>
+          </div>
+          <div style="background:#0f172a;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px;">
+            <span>🖼</span><span style="color:#3b82f6;font-size:11px;">sales-report-2026-05-05-p2.png</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #1d4ed8;">
+          <p style="color:#3b82f6;font-size:11px;font-weight:700;">⚙️ 完全自動化</p>
+          <p style="color:#64748b;font-size:11px;margin-top:4px;line-height:1.6;">GitHub Actions が<br>月〜金 20:00 に自動実行<br>メンバーの操作は不要</p>
+        </div>
+      </div>
+      <!-- 2枚の画像 -->
+      <div class="flex flex-col gap-3 flex-1" style="min-width:0;">
+        <div class="flex-1 flex flex-col" style="min-height:0;">
+          <p style="color:#64748b;font-size:11px;font-weight:700;margin-bottom:4px;">添付① チームシグナル・メンバー別</p>
+          <img src="./screenshots/dashboard.png" class="ss flex-1" style="object-fit:contain;min-height:0;">
+        </div>
+        <div class="flex-1 flex flex-col" style="min-height:0;">
+          <p style="color:#64748b;font-size:11px;font-weight:700;margin-bottom:4px;">添付② 全員サマリー一覧</p>
+          <img src="./screenshots/summary.png" class="ss flex-1" style="object-fit:contain;min-height:0;">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 5: ツール画面 日次フォーム
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#f8fafc;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#064e3b;border-radius:12px;padding:14px 24px;margin-bottom:16px;">
+      <p class="font-bold" style="color:#fff;font-size:22px;">ツール紹介②　日次レポートフォーム</p>
+      <p style="color:#6ee7b7;font-size:13px;">メンバーが毎日退勤前に入力 ／ 所要時間: 1〜2分</p>
+    </div>
+    <div class="flex gap-5 flex-1" style="min-height:0;">
+      <div style="flex:2;min-width:0;">
+        <img src="./screenshots/daily.png" class="ss w-full h-full" style="object-fit:contain;max-height:calc(100vh - 180px);">
+      </div>
+      <div class="flex flex-col gap-3" style="flex:0 0 260px;">
+        <div class="annot" style="border-color:#10b981;">
+          <p class="font-bold" style="color:#10b981;font-size:13px;">🟢 ステータスをワンクリック</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">4択から選ぶだけ。入力の手間を極限まで削減した</p>
+        </div>
+        <div class="annot" style="border-color:#3b82f6;">
+          <p class="font-bold" style="color:#3b82f6;font-size:13px;">🏢 顧客リスト自動表示</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">週次計画に登録した顧客が自動で並ぶ。入力する必要なし</p>
+        </div>
+        <div class="annot" style="border-color:#f59e0b;">
+          <p class="font-bold" style="color:#f59e0b;font-size:13px;">📝 サマリーは1〜2文でOK</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">詳細は口頭で共有する前提。ツールは「シグナル」を記録する場所</p>
+        </div>
+        <div class="annot" style="border-color:#8b5cf6;">
+          <p class="font-bold" style="color:#8b5cf6;font-size:13px;">💾 下書き保存あり</p>
+          <p style="color:#475569;font-size:12px;margin-top:4px;line-height:1.6;">途中保存して後から送信可能。修正は当日20:00まで</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 6: 4ステータスの設計思想
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#f8fafc;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e293b;border-radius:12px;padding:14px 24px;margin-bottom:20px;">
+      <p class="font-bold" style="color:#fff;font-size:22px;">4ステータスをどう決めたか</p>
+      <p style="color:#94a3b3;font-size:13px;">「毎日確実に完了させる文化」を仕組みで支える</p>
+    </div>
+    <div class="grid grid-cols-4 gap-4 flex-1" style="min-height:0;">
+      <div class="flex flex-col rounded-xl overflow-hidden shadow-sm">
+        <div style="background:#94a3b8;padding:16px;text-align:center;">
+          <p class="font-black" style="color:#fff;font-size:20px;">未着手</p>
+          <p style="color:#f1f5f9;font-size:12px;margin-top:4px;">本日まだ活動なし</p>
+        </div>
+        <div class="bg-white flex-1 p-4">
+          <p style="color:#64748b;font-size:13px;line-height:1.8;">周囲が認識できる<br>→ 声がけ・フォローの<br>　 トリガーになる<br><br>✅ 放置を防ぐ仕組み</p>
+        </div>
+      </div>
+      <div class="flex flex-col rounded-xl overflow-hidden shadow-sm">
+        <div style="background:#3b82f6;padding:16px;text-align:center;">
+          <p class="font-black" style="color:#fff;font-size:20px;">進行中</p>
+          <p style="color:#dbeafe;font-size:12px;margin-top:4px;">商談・訪問・作業中</p>
+        </div>
+        <div class="bg-white flex-1 p-4">
+          <p style="color:#64748b;font-size:13px;line-height:1.8;">動いていることが<br>可視化される<br>→ 邪魔しない<br>　 タイミングが分かる<br><br>✅ 自律性を尊重</p>
+        </div>
+      </div>
+      <div class="flex flex-col rounded-xl overflow-hidden shadow-sm">
+        <div style="background:#f59e0b;padding:16px;text-align:center;">
+          <p class="font-black" style="color:#fff;font-size:20px;">完了待ち</p>
+          <p style="color:#fef3c7;font-size:12px;margin-top:4px;">提案済・先方回答待ち</p>
+        </div>
+        <div class="bg-white flex-1 p-4">
+          <p style="color:#64748b;font-size:13px;line-height:1.8;">やり残しが明確になる<br>→ 翌日以降のTODOに<br>　 自動で引き継がれる<br><br>✅ 個人の備忘録にもなる</p>
+        </div>
+      </div>
+      <div class="flex flex-col rounded-xl overflow-hidden shadow-sm">
+        <div style="background:#10b981;padding:16px;text-align:center;">
+          <p class="font-black" style="color:#fff;font-size:20px;">完了</p>
+          <p style="color:#d1fae5;font-size:12px;margin-top:4px;">本日の目標達成</p>
+        </div>
+        <div class="bg-white flex-1 p-4">
+          <p style="color:#64748b;font-size:13px;line-height:1.8;">完了までこだわる<br>文化をつくる<br>→ 達成感の可視化で<br>　 モチベーション維持<br><br>✅ 成果を認める文化</p>
+        </div>
+      </div>
+    </div>
+    <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:8px;padding:12px 20px;margin-top:16px;">
+      <p style="color:#1d4ed8;font-size:13px;font-weight:700;">💡 ポイント: 「完了しなかったこと」を可視化することで、翌日以降のフォローが自然に発生する仕組みになっている</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 7: 課題と解決方法
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#f8fafc;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e293b;border-radius:12px;padding:14px 24px;margin-bottom:20px;">
+      <p class="font-bold" style="color:#fff;font-size:22px;">一番の課題と解決方法</p>
+      <p style="color:#94a3b3;font-size:13px;">何をどう報告させるか — 設計で最も悩んだ部分</p>
+    </div>
+    <div class="flex gap-6 flex-1" style="min-height:0;">
+      <!-- 課題 -->
+      <div class="flex-1 rounded-xl overflow-hidden flex flex-col">
+        <div style="background:#ef4444;padding:14px 20px;">
+          <p class="font-bold" style="color:#fff;font-size:18px;">😰 課題</p>
+        </div>
+        <div style="background:#fff5f5;flex:1;padding:20px;line-height:1.9;color:#374151;font-size:14px;">
+          <p>「何を・どう・どこまで報告させるか」を<br><strong>できるだけシンプルに設計すること</strong></p>
+          <br>
+          <p>• 情報が多すぎると入力が面倒になり<br>　 続かなくなる</p>
+          <p>• 少なすぎると状況が伝わらない</p>
+          <p>• 毎日続けてもらうには<br>　 入力の負担を最小限にする必要がある</p>
+          <br>
+          <p style="color:#ef4444;font-weight:700;">→ 誰が何を報告すべきか、<br>　 フォーマットを何度も考え直した</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center" style="font-size:36px;color:#94a3b8;">⟹</div>
+
+      <!-- 解決 -->
+      <div class="flex-1 rounded-xl overflow-hidden flex flex-col">
+        <div style="background:#10b981;padding:14px 20px;">
+          <p class="font-bold" style="color:#fff;font-size:18px;">✅ 解決方法</p>
+        </div>
+        <div style="background:#f0fdf4;flex:1;padding:20px;line-height:1.9;color:#374151;font-size:14px;">
+          <p><strong>AIに何度もサンプルを作成してもらい、<br>実際に画面を見ながら修正を繰り返した</strong></p>
+          <br>
+          <div style="background:#fff;border-radius:8px;padding:12px 16px;border-left:4px solid #10b981;">
+            <p style="font-weight:700;color:#064e3b;font-size:13px;">具体的な進め方:</p>
+            <p style="font-size:13px;margin-top:6px;">① まず「こんなツールが欲しい」とざっくり伝えて<br>　 AIにサンプルを作成してもらう</p>
+            <p style="font-size:13px;margin-top:4px;">② 画面キャプチャを撮りながら<br>　 「ここをこう変えて」と修正依頼</p>
+            <p style="font-size:13px;margin-top:4px;">③ ①②を繰り返して完成形に近づけた</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 8: AIで気づいたこと
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:#0f172a;">
+  <div class="flex flex-col h-full px-8 py-6">
+    <div style="background:#1e3a5f;border:1px solid #1d4ed8;border-radius:12px;padding:14px 24px;margin-bottom:20px;">
+      <p class="font-bold" style="color:#fff;font-size:22px;">AIを使ってみて気づいたこと</p>
+      <p style="color:#94a3b3;font-size:13px;">実際に体験して分かった、AIとの上手な付き合い方</p>
+    </div>
+    <div class="grid grid-cols-3 gap-5 flex-1" style="min-height:0;">
+      <div style="background:#1e293b;border-radius:12px;overflow:hidden;">
+        <div style="background:#3b82f6;height:6px;"></div>
+        <div class="p-6 flex flex-col gap-3">
+          <span style="font-size:36px;">🚀</span>
+          <p class="font-bold" style="color:#fff;font-size:16px;">最初の指示でかなりの精度</p>
+          <p style="color:#94a3b3;font-size:13px;line-height:1.8;">「こんなツールが欲しい」と伝えるだけで、イメージに近いものがすぐに作られた。最初の出力クオリティが想像以上に高かった。</p>
+        </div>
+      </div>
+      <div style="background:#1e293b;border-radius:12px;overflow:hidden;">
+        <div style="background:#8b5cf6;height:6px;"></div>
+        <div class="p-6 flex flex-col gap-3">
+          <span style="font-size:36px;">📸</span>
+          <p class="font-bold" style="color:#fff;font-size:16px;">画面キャプチャ＋修正依頼が最強</p>
+          <p style="color:#94a3b3;font-size:13px;line-height:1.8;">「この画面のここをこう変えて」と画像を添付して依頼すると、AIが意図を正確に読み取って修正してくれた。</p>
+        </div>
+      </div>
+      <div style="background:#1e293b;border-radius:12px;overflow:hidden;">
+        <div style="background:#10b981;height:6px;"></div>
+        <div class="p-6 flex flex-col gap-3">
+          <span style="font-size:36px;">🔄</span>
+          <p class="font-bold" style="color:#fff;font-size:16px;">繰り返しが完成度を上げる</p>
+          <p style="color:#94a3b3;font-size:13px;line-height:1.8;">一度で完璧にしようとするより、「見てみて直す」を繰り返す方がよいものができた。会話型AIならではの強み。</p>
+        </div>
+      </div>
+    </div>
+    <div style="background:#1e3a5f;border:1px solid #1d4ed8;border-radius:12px;padding:16px 24px;margin-top:20px;text-align:center;">
+      <p style="color:#fff;font-size:16px;font-weight:700;">✨ AIは「作ってくれる人」ではなく「一緒に考えてくれる相棒」</p>
+      <p style="color:#94a3b3;font-size:13px;margin-top:6px;">どんなツールが必要かを自分で考え、AIに伝え、見て判断する。専門知識ゼロでも、アイデアがあればツールが作れる時代になった。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────
+     Slide 9: メンバーへ
+────────────────────────────────────────────────────── -->
+<section class="slide fade-in" style="background:linear-gradient(135deg,#0f172a 60%,#064e3b);">
+  <div class="flex flex-col items-center justify-center h-full gap-8 px-12">
+    <p style="color:#6ee7b7;font-size:14px;font-weight:700;letter-spacing:2px;">MESSAGE TO THE TEAM</p>
+    <h2 class="text-center font-black" style="color:#fff;font-size:clamp(24px,4vw,44px);line-height:1.4;">
+      このツールは、皆さんと一緒に<br>育てていくものです
+    </h2>
+    <div class="grid grid-cols-3 gap-5 w-full" style="max-width:900px;">
+      <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:20px;text-align:center;">
+        <p style="font-size:28px;margin-bottom:10px;">💬</p>
+        <p class="font-bold" style="color:#fff;font-size:14px;margin-bottom:8px;">使いづらい点を教えてください</p>
+        <p style="color:#94a3b3;font-size:12px;line-height:1.7;">入力項目・画面の見方・操作方法など、気になることは何でも</p>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:20px;text-align:center;">
+        <p style="font-size:28px;margin-bottom:10px;">🔧</p>
+        <p class="font-bold" style="color:#fff;font-size:14px;margin-bottom:8px;">改良アイデアを歓迎します</p>
+        <p style="color:#94a3b3;font-size:12px;line-height:1.7;">「こんな機能があれば」「この項目は不要」など、現場の声が一番大切</p>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:20px;text-align:center;">
+        <p style="font-size:28px;margin-bottom:10px;">🌱</p>
+        <p class="font-bold" style="color:#fff;font-size:14px;margin-bottom:8px;">チームに合わせて進化させたい</p>
+        <p style="color:#94a3b3;font-size:12px;line-height:1.7;">皆さんのフィードバックをもとに、今後もどんどん改善していきます</p>
+      </div>
+    </div>
+    <div style="margin-top:8px;padding:14px 32px;background:rgba(16,185,129,.15);border:1px solid #10b981;border-radius:12px;text-align:center;">
+      <p style="color:#6ee7b7;font-size:14px;">🌐 ツール本体: <strong style="color:#fff;">https://hirohisatanabegit.github.io/My-First-Project/</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ナビゲーション ────────────────────────────────── -->
+<nav id="nav" style="
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;
+  background:rgba(15,23,42,.85);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.1);border-radius:999px;
+  padding:10px 20px;z-index:100;
+">
+  <button id="prev" onclick="go(-1)" style="
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:#1e293b;color:#94a3b8;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.2s;
+  ">‹</button>
+  <div id="dots" style="display:flex;gap:7px;"></div>
+  <button id="next" onclick="go(1)" style="
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:#3b82f6;color:#fff;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.2s;
+  ">›</button>
+  <span id="counter" style="color:#64748b;font-size:12px;min-width:36px;text-align:center;"></span>
+</nav>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+let cur = 0;
+
+// ドット生成
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active', 'fade-in');
+  slides[n].classList.add('active', 'fade-in');
+  document.querySelectorAll('.dot')[cur].classList.remove('active');
+  document.querySelectorAll('.dot')[n].classList.add('active');
+  cur = n;
+  document.getElementById('counter').textContent = `${n+1} / ${slides.length}`;
+  document.getElementById('prev').style.opacity = cur === 0 ? '.3' : '1';
+  document.getElementById('next').style.background = cur === slides.length-1 ? '#1e293b' : '#3b82f6';
+}
+function go(d) {
+  const n = Math.max(0, Math.min(slides.length - 1, cur + d));
+  goTo(n);
+}
+goTo(0);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+});
+</script>
+</body>
+</html>
