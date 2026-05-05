@@ -63,8 +63,12 @@ export default function SettingsView({
   const [emailSubject, setEmailSubject] = useLocalStorage('cfg-emailSubject', '【営業活動】日次シグナルボード {date}');
   const [autoCapture,  setAutoCapture]  = useLocalStorage<boolean>('cfg-autoCapture', true);
 
-  // ステータス設定（説明文のみ編集可）
-  const [statusDefs, setStatusDefs] = useState(INITIAL_STATUSES);
+  // ステータス設定（説明文のみ編集可・localStorage 永続化）
+  const [statusDescs, setStatusDescs] = useLocalStorage<Record<string, string>>(
+    'cfg-statusDescs',
+    Object.fromEntries(INITIAL_STATUSES.map(s => [s.key, s.description])),
+  );
+  const statusDefs = INITIAL_STATUSES.map(s => ({ ...s, description: statusDescs[s.key] ?? s.description }));
 
   // 目標アクション選択肢の編集用ローカルコピー
   const [localGoals,  setLocalGoals]  = useState<string[]>(goalOptions);
@@ -88,6 +92,11 @@ export default function SettingsView({
     setLocalGoals(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; });
   };
 
+  // 締切・リマインド設定（localStorage 永続化）
+  const [deadlineTime,    setDeadlineTime]    = useLocalStorage('cfg-deadlineTime',    '19:30');
+  const [reminderTime,    setReminderTime]    = useLocalStorage('cfg-reminderTime',    '19:00');
+  const [reminderEnabled, setReminderEnabled] = useLocalStorage<boolean>('cfg-reminderEnabled', true);
+
   // 保存通知
   const [saved, setSaved] = useState(false);
 
@@ -106,7 +115,7 @@ export default function SettingsView({
     setMembers(prev => prev.map(m => m.id === id ? { ...m, name } : m));
 
   const updateStatusDesc = (key: Status, description: string) =>
-    setStatusDefs(prev => prev.map(s => s.key === key ? { ...s, description } : s));
+    setStatusDescs(prev => ({ ...prev, [key]: description }));
 
   const handleSave = () => {
     setRoster(members);          // メンバー名簿を全ページへ反映
@@ -344,13 +353,23 @@ export default function SettingsView({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">入力締切時刻</label>
-              <input type="time" defaultValue="19:30" className={`w-full ${INPUT_CLS}`} />
+              <input
+                type="time"
+                value={deadlineTime}
+                onChange={e => setDeadlineTime(e.target.value)}
+                className={`w-full ${INPUT_CLS}`}
+              />
               <p className="text-xs text-slate-400">この時刻以降は当日の修正ができなくなります</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">リマインド通知時刻</label>
-              <input type="time" defaultValue="19:00" className={`w-full ${INPUT_CLS}`} />
-              <p className="text-xs text-slate-400">未入力メンバーへSlack/メールで通知します</p>
+              <input
+                type="time"
+                value={reminderTime}
+                onChange={e => setReminderTime(e.target.value)}
+                className={`w-full ${INPUT_CLS}`}
+              />
+              <p className="text-xs text-slate-400">未入力メンバーへSlack/メールで通知します（現在: {reminderTime}）</p>
             </div>
           </div>
           <div className="flex items-center justify-between py-2 border-t border-slate-100">
@@ -358,8 +377,10 @@ export default function SettingsView({
               <p className="text-sm font-medium text-slate-700">未入力メンバーへのリマインド送信</p>
               <p className="text-xs text-slate-400">締切前にSlackまたはメールで自動通知</p>
             </div>
-            <button className="relative w-11 h-6 rounded-full bg-green-500">
-              <span className="absolute top-0.5 translate-x-5 w-5 h-5 bg-white rounded-full shadow" />
+            <button
+              onClick={() => setReminderEnabled(v => !v)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${reminderEnabled ? 'bg-green-500' : 'bg-slate-200'}`}>
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${reminderEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
         </div>
