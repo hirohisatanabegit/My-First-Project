@@ -1,18 +1,5 @@
 import { useState } from 'react';
-import { Status } from '../types';
-
-// ── 初期設定データ ────────────────────────────────────────────────────────
-
-const INITIAL_MEMBERS = [
-  { id: 1, name: '田中 一郎', role: 'シニア' },
-  { id: 2, name: '鈴木 花子', role: 'シニア' },
-  { id: 3, name: '佐藤 太郎', role: 'ジュニア' },
-  { id: 4, name: '山田 次郎', role: 'シニア' },
-  { id: 5, name: '伊藤 美咲', role: 'リーダー' },
-  { id: 6, name: '渡辺 健二', role: 'ミドル' },
-  { id: 7, name: '小林 直樹', role: 'ミドル' },
-  { id: 8, name: '加藤 聡子', role: 'ジュニア' },
-];
+import { Status, RosterMember } from '../types';
 
 const INITIAL_STATUSES: { key: Status; label: string; description: string; color: string }[] = [
   { key: '未着手',  label: '未着手',  description: '当日の活動記録なし・未対応',       color: 'bg-slate-100 text-slate-600' },
@@ -55,14 +42,16 @@ function SaveBanner({ onSave }: { onSave: () => void }) {
 // ── メインコンポーネント ─────────────────────────────────────────────────
 
 export default function SettingsView({
-  goalOptions,
-  setGoalOptions,
+  roster, setRoster,
+  goalOptions, setGoalOptions,
 }: {
+  roster: RosterMember[];
+  setRoster: (r: RosterMember[]) => void;
   goalOptions: string[];
   setGoalOptions: (opts: string[]) => void;
 }) {
-  // メンバー管理
-  const [members, setMembers] = useState(INITIAL_MEMBERS);
+  // メンバー管理（ローカルコピー → 保存時に反映）
+  const [members, setMembers] = useState<RosterMember[]>([...roster]);
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('ミドル');
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -119,7 +108,8 @@ export default function SettingsView({
     setStatusDefs(prev => prev.map(s => s.key === key ? { ...s, description } : s));
 
   const handleSave = () => {
-    setGoalOptions(localGoals);
+    setRoster(members);          // メンバー名簿を全ページへ反映
+    setGoalOptions(localGoals);  // 目標アクション選択肢を全ページへ反映
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };

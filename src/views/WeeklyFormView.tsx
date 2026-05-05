@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MEMBERS, Priority } from '../types';
+import { MEMBERS, Priority, RosterMember } from '../types';
 import StatusPill from '../components/StatusPill';
 
 const PRIORITY_OPTIONS: Priority[] = ['高', '中', '低'];
@@ -11,7 +11,7 @@ const TASK_CATEGORY_OPTIONS = [
   'システム・ツール対応',
   'その他',
 ];
-const MEMBER_OPTIONS = MEMBERS.map(m => m.name);
+// MEMBER_OPTIONS は roster から動的に生成するため削除
 
 interface CustomerRow { name: string; goal: string; priority: Priority }
 interface TaskRow { description: string; category: string; priority: Priority }
@@ -22,8 +22,8 @@ const DEFAULT_TASK = (): TaskRow => ({ description: '', category: '資料作成�
 const INPUT_CLS = 'border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300';
 const SELECT_CLS = INPUT_CLS;
 
-export default function WeeklyFormView({ goalOptions }: { goalOptions: string[] }) {
-  const [member,     setMember]     = useState('鈴木 花子');
+export default function WeeklyFormView({ roster, goalOptions }: { roster: RosterMember[]; goalOptions: string[] }) {
+  const [member,     setMember]     = useState(roster[0]?.name ?? '鈴木 花子');
   const [customers,  setCustomers]  = useState<CustomerRow[]>([
     { name: 'C社', goal: goalOptions[2] ?? goalOptions[0], priority: '高' },
     { name: 'D社', goal: goalOptions[0],                   priority: '中' },
@@ -89,7 +89,7 @@ export default function WeeklyFormView({ goalOptions }: { goalOptions: string[] 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500">氏名 <span className="text-slate-400 font-normal">（ログインから自動入力）</span></label>
             <select value={member} onChange={e => setMember(e.target.value)} className={`w-full ${SELECT_CLS}`}>
-              {MEMBER_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+              {roster.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">

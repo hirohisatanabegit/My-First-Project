@@ -1,9 +1,23 @@
 import { useState } from 'react';
-import { MEMBERS, Status, STATUS_BG, SITUATION_BG, STATUS_BORDER, STATUS_ROW } from '../types';
+import { MEMBERS, Member, Status, SITUATION_BG, STATUS_BORDER, STATUS_ROW, RosterMember } from '../types';
 import StatusPill from '../components/StatusPill';
 import DonutChart from '../components/DonutChart';
 
 const ALL_STATUSES: (Status | 'すべて')[] = ['すべて', '未着手', '進行中', '完了待ち', '完了'];
+
+/** 名簿からアクティブメンバーを生成（サンプルデータと結合、未登録は未着手扱い） */
+function buildActiveMembers(roster: RosterMember[]): Member[] {
+  return roster.map(r => {
+    const found = MEMBERS.find(m => m.name === r.name);
+    return found ?? {
+      name:      r.name,
+      status:    '未着手' as Status,
+      customers: [],
+      summary:   '本日の活動記録なし。',
+      updatedAt: '—',
+    };
+  });
+}
 
 // ── スライドナビゲーション ─────────────────────────────────────────────────
 
@@ -34,23 +48,21 @@ function SlideNav({ page, total, onPrev, onNext }: {
   );
 }
 
-// ── ページ 1: チームシグナル + メンバーカード ─────────────────────────────
+// ── ページ 1: チームシグナル + メンバーカード ─────────────────────────
 
-function Page1({
-  counts, total, filter, setFilter,
-}: {
+function Page1({ counts, total, filter, setFilter, activeMembers }: {
   counts: Record<Status, number>;
   total: number;
   filter: Status | 'すべて';
   setFilter: (f: Status | 'すべて') => void;
+  activeMembers: Member[];
 }) {
-  const filtered = filter === 'すべて' ? MEMBERS : MEMBERS.filter(m => m.status === filter);
+  const filtered = filter === 'すべて' ? activeMembers : activeMembers.filter(m => m.status === filter);
 
   return (
     <div className="space-y-5">
       {/* チーム全体シグナル */}
       <div className="grid grid-cols-5 gap-4 items-center">
-        {/* 4 Stats */}
         <div className="col-span-3 grid grid-cols-2 gap-3">
           {([
             { label: '未着手',  count: counts['未着手'],  color: 'text-slate-600', border: 'border-t-4 border-slate-300' },
@@ -67,7 +79,6 @@ function Page1({
             </div>
           ))}
         </div>
-        {/* ドーナツ */}
         <div className="col-span-2 card p-3 flex items-center justify-center">
           <DonutChart size={150} data={[
             { label: '未着手',  value: counts['未着手'],  tone: 'neutral' },
@@ -90,7 +101,7 @@ function Page1({
         ))}
       </div>
 
-      {/* メンバーカード（コンパクト） */}
+      {/* メンバーカード */}
       <div className="grid grid-cols-2 gap-3">
         {filtered.map(member => (
           <div key={member.name} className={`card ${STATUS_BORDER[member.status]}`}>
@@ -99,16 +110,18 @@ function Page1({
               <StatusPill type="status" value={member.status} />
             </div>
             <div className="px-3 py-2 space-y-2">
-              <div>
-                <p className="text-xs text-slate-400 font-semibold mb-1">今週の顧客状況</p>
-                <div className="flex flex-wrap gap-1">
-                  {member.customers.map(c => (
-                    <span key={c.name} className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${SITUATION_BG[c.situation]}`}>
-                      {c.name}
-                    </span>
-                  ))}
+              {member.customers.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-400 font-semibold mb-1">今週の顧客状況</p>
+                  <div className="flex flex-wrap gap-1">
+                    {member.customers.map(c => (
+                      <span key={c.name} className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${SITUATION_BG[c.situation]}`}>
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <p className="text-xs text-slate-500 leading-relaxed">{member.summary}</p>
             </div>
           </div>
@@ -120,19 +133,22 @@ function Page1({
 
 // ── ページ 2: 全員サマリーテーブル ───────────────────────────────────────
 
-function Page2({ counts, total }: { counts: Record<Status, number>; total: number }) {
-  const doneRate = Math.round((counts['完了'] / total) * 100);
+function Page2({ counts, total, activeMembers }: {
+  counts: Record<Status, number>;
+  total: number;
+  activeMembers: Member[];
+}) {
+  const doneRate    = total === 0 ? 0 : Math.round((counts['完了'] / total) * 100);
   const activeCount = counts['完了'] + counts['進行中'];
 
   return (
     <div className="space-y-5">
-      {/* ミニサマリー行 */}
       <div className="grid grid-cols-4 gap-3">
         {([
-          { label: '対象メンバー',  value: `${total}名`,        sub: '全員対象' },
-          { label: '完了率',        value: `${doneRate}%`,       sub: `${counts['完了']}名が完了` },
-          { label: '活動中',        value: `${activeCount}名`,   sub: '進行中 + 完了' },
-          { label: '要フォロー',    value: `${counts['未着手']}名`, sub: '未着手' },
+          { label: '対象メンバー', value: `${total}名`,            sub: '全員対象' },
+          { label: '完了率',       value: `${doneRate}%`,          sub: `${counts['完了']}名が完了` },
+          { label: '活動中',       value: `${activeCount}名`,      sub: '進行中 + 完了' },
+          { label: '要フォロー',   value: `${counts['未着手']}名`, sub: '未着手' },
         ] as const).map(s => (
           <div key={s.label} className="card p-3">
             <p className="text-xs text-slate-400">{s.label}</p>
@@ -142,7 +158,6 @@ function Page2({ counts, total }: { counts: Record<Status, number>; total: numbe
         ))}
       </div>
 
-      {/* 全員サマリーテーブル */}
       <div>
         <h3 className="text-sm font-semibold text-slate-700 mb-2">全員サマリー一覧</h3>
         <div className="card overflow-x-auto">
@@ -155,7 +170,7 @@ function Page2({ counts, total }: { counts: Record<Status, number>; total: numbe
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {MEMBERS.map(m => (
+              {activeMembers.map(m => (
                 <tr key={m.name} className={STATUS_ROW[m.status]}>
                   <td className="px-3 py-2.5 font-semibold text-slate-800 whitespace-nowrap">{m.name}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
@@ -183,23 +198,24 @@ function Page2({ counts, total }: { counts: Record<Status, number>; total: numbe
 
 // ── メインコンポーネント ─────────────────────────────────────────────────
 
-export default function DashboardView() {
+export default function DashboardView({ roster }: { roster: RosterMember[] }) {
   const [page,   setPage]   = useState(0);
   const [filter, setFilter] = useState<Status | 'すべて'>('すべて');
 
+  const activeMembers = buildActiveMembers(roster);
+
   const counts: Record<Status, number> = {
-    '未着手':  MEMBERS.filter(m => m.status === '未着手').length,
-    '進行中':  MEMBERS.filter(m => m.status === '進行中').length,
-    '完了待ち': MEMBERS.filter(m => m.status === '完了待ち').length,
-    '完了':    MEMBERS.filter(m => m.status === '完了').length,
+    '未着手':  activeMembers.filter(m => m.status === '未着手').length,
+    '進行中':  activeMembers.filter(m => m.status === '進行中').length,
+    '完了待ち': activeMembers.filter(m => m.status === '完了待ち').length,
+    '完了':    activeMembers.filter(m => m.status === '完了').length,
   };
-  const total = MEMBERS.length;
+  const total = activeMembers.length;
 
   const PAGE_LABELS = ['チームシグナル・メンバー別', '全員サマリー一覧'];
 
   return (
     <div className="space-y-4">
-      {/* ヘッダー + スライドナビ */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">営業活動 日次シグナルボード</h1>
@@ -220,24 +236,24 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* ページタブ */}
-      <div className="flex gap-2 border-b border-slate-200 pb-0">
+      <div className="flex gap-2 border-b border-slate-200">
         {PAGE_LABELS.map((label, i) => (
           <button key={i} onClick={() => setPage(i)}
             className={`pb-2.5 px-1 text-sm font-medium border-b-2 transition-colors ${
-              page === i
-                ? 'border-slate-800 text-slate-900'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
+              page === i ? 'border-slate-800 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}>
             {label}
           </button>
         ))}
       </div>
 
-      {/* スライドコンテンツ */}
       <div className="min-h-[500px]">
-        {page === 0 && <Page1 counts={counts} total={total} filter={filter} setFilter={setFilter} />}
-        {page === 1 && <Page2 counts={counts} total={total} />}
+        {page === 0 && (
+          <Page1 counts={counts} total={total} filter={filter} setFilter={setFilter} activeMembers={activeMembers} />
+        )}
+        {page === 1 && (
+          <Page2 counts={counts} total={total} activeMembers={activeMembers} />
+        )}
       </div>
     </div>
   );

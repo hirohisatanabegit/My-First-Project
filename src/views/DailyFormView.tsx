@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MEMBERS, Status, Situation, STATUS_BG, SITUATION_BG } from '../types';
+import { MEMBERS, Status, Situation, STATUS_BG, SITUATION_BG, RosterMember } from '../types';
 
 const STATUSES: Status[]    = ['未着手', '進行中', '完了待ち', '完了'];
 const SITUATIONS: Situation[] = ['未着手', '対応中', '提案済み', '完了'];
@@ -11,8 +11,8 @@ const STATUS_HINT: Record<Status, string> = {
   '完了':    '本日の目標達成',
 };
 
-export default function DailyFormView() {
-  const [member,     setMember]     = useState('鈴木 花子');
+export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
+  const [member,     setMember]     = useState(roster[0]?.name ?? '鈴木 花子');
   const [status,     setStatus]     = useState<Status>('進行中');
   const [custSits,   setCustSits]   = useState<Record<string, Situation>>({});
   const [summary,    setSummary]    = useState('');
@@ -65,7 +65,7 @@ export default function DailyFormView() {
             <label className="text-xs font-semibold text-slate-500">氏名 <span className="text-slate-400 font-normal">（自動入力）</span></label>
             <select value={member} onChange={e => setMember(e.target.value)}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
-              {MEMBERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+              {roster.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">

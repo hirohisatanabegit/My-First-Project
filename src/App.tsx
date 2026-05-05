@@ -3,6 +3,7 @@ import DashboardView from './views/DashboardView';
 import WeeklyFormView from './views/WeeklyFormView';
 import DailyFormView from './views/DailyFormView';
 import SettingsView from './views/SettingsView';
+import { RosterMember, DEFAULT_ROSTER } from './types';
 
 type Tab = 'dashboard' | 'weekly' | 'daily' | 'settings';
 
@@ -60,8 +61,9 @@ const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
 ];
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab]           = useState<Tab>('dashboard');
   const [goalOptions, setGoalOptions] = useState<string[]>(DEFAULT_GOAL_OPTIONS);
+  const [roster, setRoster]     = useState<RosterMember[]>(DEFAULT_ROSTER);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -103,10 +105,15 @@ export default function App() {
 
       {/* MAIN */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {tab === 'dashboard' && <DashboardView />}
-        {tab === 'weekly'    && <WeeklyFormView goalOptions={goalOptions} />}
-        {tab === 'daily'     && <DailyFormView />}
-        {tab === 'settings'  && <SettingsView goalOptions={goalOptions} setGoalOptions={setGoalOptions} />}
+        {tab === 'dashboard' && <DashboardView roster={roster} />}
+        {tab === 'weekly'    && <WeeklyFormView roster={roster} goalOptions={goalOptions} />}
+        {tab === 'daily'     && <DailyFormView roster={roster} />}
+        {tab === 'settings'  && (
+          <SettingsView
+            roster={roster} setRoster={setRoster}
+            goalOptions={goalOptions} setGoalOptions={setGoalOptions}
+          />
+        )}
       </main>
 
       {/* FOOTER */}

@@ -3,6 +3,20 @@ export type Situation = '未着手' | '対応中' | '提案済み' | '完了';
 export type Priority  = '高' | '中' | '低';
 export type WeekGoal  = '初回訪問' | 'ヒアリング' | '提案' | '見積交渉' | 'クロージング' | 'フォロー';
 
+/** 設定ページで管理するチームメンバーの名簿 */
+export interface RosterMember { id: number; name: string; role: string }
+
+export const DEFAULT_ROSTER: RosterMember[] = [
+  { id: 1, name: '田中 一郎', role: 'シニア' },
+  { id: 2, name: '鈴木 花子', role: 'シニア' },
+  { id: 3, name: '佐藤 太郎', role: 'ジュニア' },
+  { id: 4, name: '山田 次郎', role: 'シニア' },
+  { id: 5, name: '伊藤 美咲', role: 'リーダー' },
+  { id: 6, name: '渡辺 健二', role: 'ミドル' },
+  { id: 7, name: '小林 直樹', role: 'ミドル' },
+  { id: 8, name: '加藤 聡子', role: 'ジュニア' },
+];
+
 export interface CustomerSituation {
   name: string;
   situation: Situation;
