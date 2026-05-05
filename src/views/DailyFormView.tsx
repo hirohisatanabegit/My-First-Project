@@ -161,7 +161,7 @@ export default function DailyFormView() {
             下書き保存
           </button>
         </div>
-        <p className="text-xs text-slate-400">送信後、ダッシュボードに即時反映。修正は当日17:00まで可能です。</p>
+        <p className="text-xs text-slate-400">送信後、ダッシュボードに即時反映。修正は当日20:00まで可能です。</p>
       </section>
     </div>
   );
