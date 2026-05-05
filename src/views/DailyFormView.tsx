@@ -32,7 +32,7 @@ export default function DailyFormView() {
           </svg>
         </div>
         <h2 className="text-xl font-bold text-slate-800">送信しました</h2>
-        <p className="text-slate-500 text-sm">ダッシュボードに反映されました。17:30 に自動でEmail送信されます。</p>
+        <p className="text-slate-500 text-sm">ダッシュボードに反映されました。20:00 に自動でEmail送信されます。</p>
         <button onClick={() => { setSubmitted(false); setSummary(''); }}
           className="mt-4 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">
           入力フォームに戻る
@@ -52,7 +52,7 @@ export default function DailyFormView() {
         <p className="text-sm text-slate-600">
           <span className="font-semibold">入力の心得:</span>　
           詳細は対面・チャットで共有する前提です。このフォームは「状況のシグナル」を記録するためのものです。
-          17:30 に自動でスクリーンショットが撮影され、上長・経営陣へEmail送信されます。
+          20:00 に自動でスクリーンショットが撮影され、上長・経営陣へEmail送信されます。
         </p>
       </div>
 
