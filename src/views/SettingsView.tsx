@@ -92,6 +92,20 @@ export default function SettingsView({
     setLocalGoals(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; });
   };
 
+  // パスコード設定
+  const [passcode,    setPasscode]    = useLocalStorage('cfg-passcode',    '0000');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [pcError,     setPcError]     = useState('');
+
+  const savePasscode = () => {
+    if (newPasscode.length < 4) { setPcError('4文字以上で設定してください。'); return; }
+    setPasscode(newPasscode);
+    setNewPasscode('');
+    setPcError('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
   // 締切・リマインド設定（localStorage 永続化）
   const [deadlineTime,    setDeadlineTime]    = useLocalStorage('cfg-deadlineTime',    '19:30');
   const [reminderTime,    setReminderTime]    = useLocalStorage('cfg-reminderTime',    '19:00');
@@ -383,6 +397,43 @@ export default function SettingsView({
               <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${reminderEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
+        </div>
+      </SectionCard>
+
+      {/* ── 5. アクセス設定 ── */}
+      <SectionCard title="アクセス設定（パスコード）">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            アプリへのアクセスに必要なパスコードを変更します。変更後はチームメンバーへ新しいパスコードをお知らせください。
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500">現在のパスコード</label>
+            <div className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-400 bg-slate-50 tracking-widest">
+              {'●'.repeat(passcode.length)}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500">新しいパスコード <span className="font-normal text-slate-400">（4文字以上）</span></label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={newPasscode}
+                onChange={e => { setNewPasscode(e.target.value); setPcError(''); }}
+                placeholder="新しいパスコードを入力"
+                className={`flex-1 ${INPUT_CLS} ${pcError ? 'border-red-400' : ''}`}
+              />
+              <button
+                onClick={savePasscode}
+                className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors whitespace-nowrap">
+                変更する
+              </button>
+            </div>
+            {pcError && <p className="text-xs text-red-500">{pcError}</p>}
+          </div>
+          <p className="text-xs text-slate-400">
+            ※ パスコードはブラウザのローカルストレージに保存されます。
+            セキュリティが重要な場合はサーバー認証への移行をご検討ください。
+          </p>
         </div>
       </SectionCard>
 

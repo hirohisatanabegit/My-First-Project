@@ -1,21 +1,44 @@
 import { useState, useEffect } from 'react';
-import { MEMBERS, Member, Status, SITUATION_BG, STATUS_BORDER, STATUS_ROW, RosterMember } from '../types';
+import {
+  MEMBERS, Member, Status, Situation, SITUATION_BG, STATUS_BORDER, STATUS_ROW,
+  RosterMember, DailySubmission, WeeklyPlanSubmission,
+  dailySubmissionKey, weeklyPlanKey,
+} from '../types';
 import { formatJapaneseDate, formatTime } from '../utils/date';
 import StatusPill from '../components/StatusPill';
 import DonutChart from '../components/DonutChart';
 
 const ALL_STATUSES: (Status | 'すべて')[] = ['すべて', '未着手', '進行中', '完了待ち', '完了'];
 
-/** 名簿からアクティブメンバーを生成（サンプルデータと結合、未登録は未着手扱い） */
+/** 名簿からアクティブメンバーを生成。
+ *  優先順位: 今日の送信データ → 静的サンプル → デフォルト（未着手） */
 function buildActiveMembers(roster: RosterMember[]): Member[] {
   return roster.map(r => {
+    try {
+      const dailyRaw = localStorage.getItem(dailySubmissionKey(r.name));
+      if (dailyRaw) {
+        const sub: DailySubmission = JSON.parse(dailyRaw);
+        const weeklyRaw = localStorage.getItem(weeklyPlanKey(r.name));
+        const customers = weeklyRaw
+          ? (JSON.parse(weeklyRaw) as WeeklyPlanSubmission).customers.map(c => ({
+              name:      c.name,
+              situation: (sub.custSits[c.name] ?? '未着手') as Situation,
+            }))
+          : [];
+        const t = new Date(sub.submittedAt);
+        return {
+          name:      r.name,
+          status:    sub.status,
+          customers,
+          summary:   sub.summary,
+          updatedAt: `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`,
+        };
+      }
+    } catch { /* ignore */ }
     const found = MEMBERS.find(m => m.name === r.name);
     return found ?? {
-      name:      r.name,
-      status:    '未着手' as Status,
-      customers: [],
-      summary:   '本日の活動記録なし。',
-      updatedAt: '—',
+      name: r.name, status: '未着手' as Status,
+      customers: [], summary: '本日の活動記録なし。', updatedAt: '—',
     };
   });
 }
@@ -63,8 +86,8 @@ function Page1({ counts, total, filter, setFilter, activeMembers }: {
   return (
     <div className="space-y-5">
       {/* チーム全体シグナル */}
-      <div className="grid grid-cols-5 gap-4 items-center">
-        <div className="col-span-3 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-center">
+        <div className="sm:col-span-3 grid grid-cols-2 gap-3">
           {([
             { label: '未着手',  count: counts['未着手'],  color: 'text-slate-600', border: 'border-t-4 border-slate-300' },
             { label: '進行中',  count: counts['進行中'],  color: 'text-blue-600',  border: 'border-t-4 border-blue-400' },
@@ -80,7 +103,7 @@ function Page1({ counts, total, filter, setFilter, activeMembers }: {
             </div>
           ))}
         </div>
-        <div className="col-span-2 card p-3 flex items-center justify-center">
+        <div className="sm:col-span-2 card p-3 flex items-center justify-center">
           <DonutChart size={150} data={[
             { label: '未着手',  value: counts['未着手'],  tone: 'neutral' },
             { label: '進行中',  value: counts['進行中'],  tone: 'info' },
@@ -103,7 +126,7 @@ function Page1({ counts, total, filter, setFilter, activeMembers }: {
       </div>
 
       {/* メンバーカード */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {filtered.map(member => (
           <div key={member.name} className={`card ${STATUS_BORDER[member.status]}`}>
             <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">

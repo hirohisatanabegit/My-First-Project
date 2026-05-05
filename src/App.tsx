@@ -3,6 +3,7 @@ import DashboardView from './views/DashboardView';
 import WeeklyFormView from './views/WeeklyFormView';
 import DailyFormView from './views/DailyFormView';
 import SettingsView from './views/SettingsView';
+import LoginView from './views/LoginView';
 import { RosterMember, DEFAULT_ROSTER } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
@@ -64,7 +65,27 @@ const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [goalOptions, setGoalOptions] = useLocalStorage<string[]>('goalOptions', DEFAULT_GOAL_OPTIONS);
-  const [roster, setRoster]     = useLocalStorage<RosterMember[]>('roster', DEFAULT_ROSTER);
+  const [roster, setRoster]           = useLocalStorage<RosterMember[]>('roster', DEFAULT_ROSTER);
+  const [passcode]                    = useLocalStorage<string>('cfg-passcode', '0000');
+
+  // 認証状態（セッション: タブを閉じるまで維持）
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => sessionStorage.getItem('app-authed') === 'true',
+  );
+
+  const handleLogin = () => {
+    sessionStorage.setItem('app-authed', 'true');
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('app-authed');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <LoginView passcode={passcode} onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -100,6 +121,16 @@ export default function App() {
                 </button>
               ))}
             </nav>
+
+            {/* ログアウト */}
+            <button
+              onClick={handleLogout}
+              title="ログアウト"
+              className="ml-3 flex-shrink-0 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>

@@ -1,7 +1,6 @@
 export type Status    = '未着手' | '進行中' | '完了待ち' | '完了';
 export type Situation = '未着手' | '対応中' | '提案済み' | '完了';
 export type Priority  = '高' | '中' | '低';
-export type WeekGoal  = '初回訪問' | 'ヒアリング' | '提案' | '見積交渉' | 'クロージング' | 'フォロー';
 
 /** 設定ページで管理するチームメンバーの名簿 */
 export interface RosterMember { id: number; name: string; role: string }
@@ -57,6 +56,35 @@ export const STATUS_ROW: Record<Status, string> = {
   '完了待ち': 'bg-amber-50',
   '完了':    'bg-green-50',
 };
+
+/** 週次計画フォームで提出された顧客データ */
+export interface WeeklyPlanCustomer {
+  name: string;
+  goal: string;
+  priority: Priority;
+}
+
+/** 週次計画フォームの提出データ全体 */
+export interface WeeklyPlanSubmission {
+  member: string;
+  customers: WeeklyPlanCustomer[];
+  theme: string;
+  submittedAt: string;
+}
+
+/** 日次フォームの提出データ */
+export interface DailySubmission {
+  member: string;
+  status: Status;
+  custSits: Record<string, Situation>;
+  summary: string;
+  submittedAt: string;
+}
+
+/** localStorage キー生成ユーティリティ */
+export const weeklyPlanKey    = (name: string) => `weekly-plan-${name}`;
+export const dailySubmissionKey = (name: string, date = new Date().toISOString().slice(0, 10)) =>
+  `daily-submission-${date}-${name}`;
 
 export const MEMBERS: Member[] = [
   { name: '田中 一郎', status: '完了',    customers: [{ name: 'A社', situation: '完了' }, { name: 'B社', situation: '提案済み' }], summary: 'A社との商談クローズ。次回フォロー日程を確定済み。',     updatedAt: '10:30' },

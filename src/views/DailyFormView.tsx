@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { MEMBERS, Status, Situation, STATUS_BG, SITUATION_BG, RosterMember } from '../types';
+import {
+  Status, Situation, STATUS_BG, SITUATION_BG,
+  RosterMember, WeeklyPlanSubmission, DailySubmission,
+  weeklyPlanKey, dailySubmissionKey,
+} from '../types';
 import { formatJapaneseDate } from '../utils/date';
 
 const STATUSES: Status[]      = ['未着手', '進行中', '完了待ち', '完了'];
@@ -14,10 +18,18 @@ const STATUS_HINT: Record<Status, string> = {
 
 const draftKey = (name: string) => `daily-draft-${name}`;
 
-interface DraftData {
-  status: Status;
-  custSits: Record<string, Situation>;
-  summary: string;
+interface DraftData { status: Status; custSits: Record<string, Situation>; summary: string }
+
+/** 週次計画から今日の顧客リストを取得 */
+function getWeeklyCustomers(memberName: string): Array<{ name: string; situation: Situation }> {
+  try {
+    const raw = localStorage.getItem(weeklyPlanKey(memberName));
+    if (raw) {
+      const plan: WeeklyPlanSubmission = JSON.parse(raw);
+      return plan.customers.map(c => ({ name: c.name, situation: '未着手' as Situation }));
+    }
+  } catch { /* ignore */ }
+  return [];
 }
 
 export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
@@ -27,13 +39,14 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
   const [summary,   setSummary]   = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [toast,     setToast]     = useState<string | null>(null);
+  const [errors,    setErrors]    = useState<string[]>([]);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
 
-  // メンバー切替時にドラフトを復元、なければリセット
+  // メンバー切替時にドラフト復元
   useEffect(() => {
     if (!member) return;
     const raw = localStorage.getItem(draftKey(member));
@@ -44,38 +57,44 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         setCustSits(d.custSits ?? {});
         setSummary(d.summary ?? '');
         showToast('下書きを読み込みました');
-      } catch {
-        resetForm();
-      }
-    } else {
-      resetForm();
+        return;
+      } catch { /* ignore */ }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [member]);
-
-  const resetForm = () => {
     setStatus('進行中');
     setCustSits({});
     setSummary('');
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member]);
 
   const setSituation = (cust: string, sit: Situation) =>
     setCustSits(prev => ({ ...prev, [cust]: sit }));
 
   const saveDraft = () => {
-    const data: DraftData = { status, custSits, summary };
-    localStorage.setItem(draftKey(member), JSON.stringify(data));
+    localStorage.setItem(draftKey(member), JSON.stringify({ status, custSits, summary }));
     showToast('下書きを保存しました');
   };
 
+  const validate = (): boolean => {
+    const errs: string[] = [];
+    if (!member)         errs.push('氏名を選択してください。');
+    if (!summary.trim()) errs.push('活動サマリーを入力してください（1〜2文で構いません）。');
+    setErrors(errs);
+    return errs.length === 0;
+  };
+
   const handleSubmit = () => {
+    if (!validate()) return;
+    // 今日の送信データを保存（ダッシュボードが読み込む）
+    const submission: DailySubmission = {
+      member, status, custSits, summary,
+      submittedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(dailySubmissionKey(member), JSON.stringify(submission));
     localStorage.removeItem(draftKey(member));
     setSubmitted(true);
   };
 
-  // 週次計画があればそこから取る。なければ静的サンプルデータで代替
-  const memberData    = MEMBERS.find(m => m.name === member);
-  const customerList  = memberData?.customers ?? [];
+  const customerList = getWeeklyCustomers(member);
 
   if (submitted) {
     return (
@@ -88,7 +107,7 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         <h2 className="text-xl font-bold text-slate-800">送信しました</h2>
         <p className="text-slate-500 text-sm">ダッシュボードに反映されました。20:00 に自動でEmail送信されます。</p>
         <button
-          onClick={() => { setSubmitted(false); resetForm(); }}
+          onClick={() => { setSubmitted(false); setStatus('進行中'); setCustSits({}); setSummary(''); setErrors([]); }}
           className="mt-4 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700">
           入力フォームに戻る
         </button>
@@ -100,7 +119,7 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
     <div className="space-y-8 max-w-2xl relative">
       {/* トースト通知 */}
       {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg animate-fade-in">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg shadow-lg">
           {toast}
         </div>
       )}
@@ -172,16 +191,17 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
         <p className="text-sm text-slate-500">週次計画で登録した顧客が自動表示されます。現在の状況を選択してください。</p>
 
         {customerList.length === 0 ? (
-          <p className="text-sm text-slate-400 italic">
-            週次計画フォームで顧客を登録すると、ここに表示されます。
-          </p>
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+            <p className="text-sm text-blue-700 font-medium">週次計画が未登録です</p>
+            <p className="text-xs text-blue-500 mt-0.5">「週次計画」タブで今週の顧客を登録すると、ここに自動表示されます。</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {customerList.map(c => {
               const current = custSits[c.name] ?? c.situation;
               return (
                 <div key={c.name} className="flex items-start gap-4">
-                  <span className="text-sm font-semibold text-slate-700 w-12 pt-2">{c.name}</span>
+                  <span className="text-sm font-semibold text-slate-700 w-14 pt-2 flex-shrink-0">{c.name}</span>
                   <div className="flex flex-wrap gap-2">
                     {SITUATIONS.map(sit => (
                       <button
@@ -208,20 +228,31 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
       {/* SECTION 3: 活動サマリー */}
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-slate-800 border-b border-slate-200 pb-2">
-          活動サマリー <span className="text-slate-400 text-sm font-normal">（1〜2文）</span>
+          活動サマリー <span className="text-slate-400 text-sm font-normal">（必須・1〜2文）</span>
         </h2>
         <p className="text-sm text-slate-500">今日の活動を簡潔に記入してください。詳細は直接共有する前提です。</p>
         <textarea
           value={summary}
-          onChange={e => setSummary(e.target.value)}
+          onChange={e => { setSummary(e.target.value); if (e.target.value.trim()) setErrors(prev => prev.filter(e => !e.includes('サマリー'))); }}
           rows={2}
           placeholder="例: C社訪問済み。ニーズ確認し来週提案書を提出予定。D社は先方都合で来週に延期。"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className={`w-full border rounded-lg px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 transition-colors ${
+            errors.some(e => e.includes('サマリー'))
+              ? 'border-red-400 focus:ring-red-200'
+              : 'border-slate-200 focus:ring-blue-300'
+          }`}
         />
       </section>
 
       {/* SUBMIT */}
       <section className="space-y-3 pb-8">
+        {errors.length > 0 && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-3 space-y-1">
+            {errors.map(e => (
+              <p key={e} className="text-xs text-red-600 font-medium">⚠ {e}</p>
+            ))}
+          </div>
+        )}
         <div className="flex gap-3">
           <button
             onClick={handleSubmit}

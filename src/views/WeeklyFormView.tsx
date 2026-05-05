@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MEMBERS, Priority, RosterMember } from '../types';
+import { Priority, RosterMember, WeeklyPlanSubmission, weeklyPlanKey } from '../types';
 import StatusPill from '../components/StatusPill';
 
 const PRIORITY_OPTIONS: Priority[] = ['高', '中', '低'];
@@ -36,6 +36,7 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
   const [theme,      setTheme]      = useState('');
   const [submitted,  setSubmitted]  = useState(false);
   const [toast,      setToast]      = useState<string | null>(null);
+  const [errors,     setErrors]     = useState<string[]>([]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -63,7 +64,26 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
     showToast('下書きを保存しました');
   };
 
+  const validate = (): boolean => {
+    const errs: string[] = [];
+    if (!member) errs.push('氏名を選択してください。');
+    if (customers.every(c => !c.name.trim())) errs.push('顧客名を1社以上入力してください。');
+    setErrors(errs);
+    return errs.length === 0;
+  };
+
   const handleSubmit = () => {
+    if (!validate()) return;
+    // 週次計画を localStorage に保存（日次フォームが読み込む）
+    const submission: WeeklyPlanSubmission = {
+      member,
+      customers: customers
+        .filter(c => c.name.trim())
+        .map(c => ({ name: c.name.trim(), goal: c.goal, priority: c.priority })),
+      theme,
+      submittedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(weeklyPlanKey(member), JSON.stringify(submission));
     localStorage.removeItem(WEEKLY_DRAFT_KEY(member));
     setSubmitted(true);
   };
@@ -317,6 +337,13 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
 
       {/* SUBMIT */}
       <section className="space-y-3 pb-8">
+        {errors.length > 0 && (
+          <div className="rounded-lg bg-red-50 border border-red-200 p-3 space-y-1">
+            {errors.map(e => (
+              <p key={e} className="text-xs text-red-600 font-medium">⚠ {e}</p>
+            ))}
+          </div>
+        )}
         <div className="flex gap-3">
           <button onClick={handleSubmit}
             className="px-5 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors">
