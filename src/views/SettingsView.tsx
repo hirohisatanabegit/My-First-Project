@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Status, STATUS_BG } from '../types';
+import { Status } from '../types';
 
 // ── 初期設定データ ────────────────────────────────────────────────────────
 
@@ -54,7 +54,13 @@ function SaveBanner({ onSave }: { onSave: () => void }) {
 
 // ── メインコンポーネント ─────────────────────────────────────────────────
 
-export default function SettingsView() {
+export default function SettingsView({
+  goalOptions,
+  setGoalOptions,
+}: {
+  goalOptions: string[];
+  setGoalOptions: (opts: string[]) => void;
+}) {
   // メンバー管理
   const [members, setMembers] = useState(INITIAL_MEMBERS);
   const [newName, setNewName] = useState('');
@@ -69,6 +75,28 @@ export default function SettingsView() {
 
   // ステータス設定（説明文のみ編集可）
   const [statusDefs, setStatusDefs] = useState(INITIAL_STATUSES);
+
+  // 目標アクション選択肢の編集用ローカルコピー
+  const [localGoals,  setLocalGoals]  = useState<string[]>(goalOptions);
+  const [newGoalText, setNewGoalText] = useState('');
+
+  const updateGoal  = (i: number, val: string) =>
+    setLocalGoals(prev => prev.map((g, idx) => idx === i ? val : g));
+  const removeGoal  = (i: number) =>
+    localGoals.length > 1 && setLocalGoals(prev => prev.filter((_, idx) => idx !== i));
+  const addGoal     = () => {
+    if (!newGoalText.trim()) return;
+    setLocalGoals(prev => [...prev, newGoalText.trim()]);
+    setNewGoalText('');
+  };
+  const moveUp   = (i: number) => {
+    if (i === 0) return;
+    setLocalGoals(prev => { const a = [...prev]; [a[i-1], a[i]] = [a[i], a[i-1]]; return a; });
+  };
+  const moveDown = (i: number) => {
+    if (i === localGoals.length - 1) return;
+    setLocalGoals(prev => { const a = [...prev]; [a[i], a[i+1]] = [a[i+1], a[i]]; return a; });
+  };
 
   // 保存通知
   const [saved, setSaved] = useState(false);
@@ -91,6 +119,7 @@ export default function SettingsView() {
     setStatusDefs(prev => prev.map(s => s.key === key ? { ...s, description } : s));
 
   const handleSave = () => {
+    setGoalOptions(localGoals);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -253,6 +282,68 @@ export default function SettingsView() {
             ))}
           </div>
           <p className="text-xs text-slate-400">説明文はメンバーの入力フォームのガイドとして表示されます。</p>
+        </div>
+      </SectionCard>
+
+      {/* ── 3.5 目標アクション選択肢 ── */}
+      <SectionCard title="週次計画フォーム：目標アクションの選択肢">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            週次計画フォームの「今週の目標アクション」ドロップダウンに表示される選択肢を管理します。
+            並び順の変更・編集・削除・追加ができます。
+          </p>
+
+          {/* 選択肢一覧 */}
+          <div className="space-y-2">
+            {localGoals.map((goal, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {/* 並び替えボタン */}
+                <div className="flex flex-col gap-0.5">
+                  <button onClick={() => moveUp(i)} disabled={i === 0}
+                    className="w-5 h-4 flex items-center justify-center text-slate-300 hover:text-slate-500 disabled:opacity-20 transition-colors">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button onClick={() => moveDown(i)} disabled={i === localGoals.length - 1}
+                    className="w-5 h-4 flex items-center justify-center text-slate-300 hover:text-slate-500 disabled:opacity-20 transition-colors">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                {/* テキスト編集 */}
+                <span className="text-xs text-slate-400 w-5 text-center flex-shrink-0">{i + 1}</span>
+                <input
+                  type="text"
+                  value={goal}
+                  onChange={e => updateGoal(i, e.target.value)}
+                  className={`flex-1 ${INPUT_CLS} py-1.5`}
+                />
+                <button onClick={() => removeGoal(i)} disabled={localGoals.length <= 1}
+                  className="text-slate-300 hover:text-red-400 disabled:opacity-20 transition-colors text-lg leading-none flex-shrink-0">×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* 新規追加 */}
+          <div className="flex gap-2 pt-1">
+            <input
+              type="text"
+              value={newGoalText}
+              onChange={e => setNewGoalText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addGoal()}
+              placeholder="新しい選択肢を入力（例: デモ・製品説明）"
+              className={`flex-1 ${INPUT_CLS}`}
+            />
+            <button onClick={addGoal}
+              className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors whitespace-nowrap">
+              追加
+            </button>
+          </div>
+          <p className="text-xs text-slate-400">
+            変更は「設定を保存する」ボタンを押すと週次計画フォームに即時反映されます。
+          </p>
         </div>
       </SectionCard>
 

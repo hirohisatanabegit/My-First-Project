@@ -6,6 +6,15 @@ import SettingsView from './views/SettingsView';
 
 type Tab = 'dashboard' | 'weekly' | 'daily' | 'settings';
 
+export const DEFAULT_GOAL_OPTIONS = [
+  '初回訪問（アポ取得済み）',
+  'ニーズヒアリング',
+  '提案書の提出',
+  '見積・価格交渉',
+  'クロージング（合意獲得）',
+  'フォロー・関係維持',
+];
+
 const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
   {
     id: 'dashboard',
@@ -52,6 +61,7 @@ const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [goalOptions, setGoalOptions] = useState<string[]>(DEFAULT_GOAL_OPTIONS);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -94,9 +104,9 @@ export default function App() {
       {/* MAIN */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {tab === 'dashboard' && <DashboardView />}
-        {tab === 'weekly'    && <WeeklyFormView />}
+        {tab === 'weekly'    && <WeeklyFormView goalOptions={goalOptions} />}
         {tab === 'daily'     && <DailyFormView />}
-        {tab === 'settings'  && <SettingsView />}
+        {tab === 'settings'  && <SettingsView goalOptions={goalOptions} setGoalOptions={setGoalOptions} />}
       </main>
 
       {/* FOOTER */}

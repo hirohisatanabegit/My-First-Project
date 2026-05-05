@@ -1,16 +1,8 @@
 import { useState } from 'react';
-import { MEMBERS, Priority, WeekGoal } from '../types';
+import { MEMBERS, Priority } from '../types';
 import StatusPill from '../components/StatusPill';
 
-const PRIORITY_OPTIONS: Priority[]  = ['高', '中', '低'];
-const WEEKGOAL_OPTIONS: { value: WeekGoal; label: string }[] = [
-  { value: '初回訪問',    label: '初回訪問（アポ取得済み）' },
-  { value: 'ヒアリング',  label: 'ニーズヒアリング' },
-  { value: '提案',        label: '提案書の提出' },
-  { value: '見積交渉',    label: '見積・価格交渉' },
-  { value: 'クロージング', label: 'クロージング（合意獲得）' },
-  { value: 'フォロー',    label: 'フォロー・関係維持' },
-];
+const PRIORITY_OPTIONS: Priority[] = ['高', '中', '低'];
 const TASK_CATEGORY_OPTIONS = [
   '資料作成・提案書作成',
   '社内会議・MTG',
@@ -21,20 +13,20 @@ const TASK_CATEGORY_OPTIONS = [
 ];
 const MEMBER_OPTIONS = MEMBERS.map(m => m.name);
 
-interface CustomerRow { name: string; goal: WeekGoal; priority: Priority }
+interface CustomerRow { name: string; goal: string; priority: Priority }
 interface TaskRow { description: string; category: string; priority: Priority }
 
-const DEFAULT_CUSTOMER = (): CustomerRow => ({ name: '', goal: 'ヒアリング', priority: '中' });
+const DEFAULT_CUSTOMER = (firstGoal: string): CustomerRow => ({ name: '', goal: firstGoal, priority: '中' });
 const DEFAULT_TASK = (): TaskRow => ({ description: '', category: '資料作成・提案書作成', priority: '中' });
 
 const INPUT_CLS = 'border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300';
 const SELECT_CLS = INPUT_CLS;
 
-export default function WeeklyFormView() {
+export default function WeeklyFormView({ goalOptions }: { goalOptions: string[] }) {
   const [member,     setMember]     = useState('鈴木 花子');
   const [customers,  setCustomers]  = useState<CustomerRow[]>([
-    { name: 'C社', goal: '提案',     priority: '高' },
-    { name: 'D社', goal: '初回訪問', priority: '中' },
+    { name: 'C社', goal: goalOptions[2] ?? goalOptions[0], priority: '高' },
+    { name: 'D社', goal: goalOptions[0],                   priority: '中' },
   ]);
   const [tasks,      setTasks]      = useState<TaskRow[]>([
     { description: '', category: '資料作成・提案書作成', priority: '中' },
@@ -45,7 +37,7 @@ export default function WeeklyFormView() {
   // 顧客行の操作
   const updateCustomer = (i: number, field: keyof CustomerRow, value: string) =>
     setCustomers(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r));
-  const addCustomer    = () => customers.length < 5 && setCustomers(prev => [...prev, DEFAULT_CUSTOMER()]);
+  const addCustomer    = () => customers.length < 5 && setCustomers(prev => [...prev, DEFAULT_CUSTOMER(goalOptions[0])]);
   const removeCustomer = (i: number) => customers.length > 1 && setCustomers(prev => prev.filter((_, idx) => idx !== i));
 
   // タスク行の操作
@@ -134,7 +126,7 @@ export default function WeeklyFormView() {
                 placeholder="例: A社" className={`col-span-3 ${INPUT_CLS}`} />
               <select value={row.goal} onChange={e => updateCustomer(i, 'goal', e.target.value)}
                 className={`col-span-6 ${SELECT_CLS}`}>
-                {WEEKGOAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {goalOptions.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
               <select value={row.priority} onChange={e => updateCustomer(i, 'priority', e.target.value as Priority)}
                 className={`col-span-1 ${SELECT_CLS}`}>
