@@ -81,10 +81,14 @@ export interface DailySubmission {
   submittedAt: string;
 }
 
-/** localStorage キー生成ユーティリティ */
-export const weeklyPlanKey    = (name: string) => `weekly-plan-${name}`;
-export const dailySubmissionKey = (name: string, date = new Date().toISOString().slice(0, 10)) =>
-  `daily-submission-${date}-${name}`;
+/** localStorage キー生成ユーティリティ。
+ *  teamId を指定すると `${teamId}:` プレフィックスが付き、チームごとにデータが分離される。
+ *  省略（空文字）の場合は既存キーと互換。 */
+export const weeklyPlanKey = (name: string, teamId = '') =>
+  teamId ? `${teamId}:weekly-plan-${name}` : `weekly-plan-${name}`;
+
+export const dailySubmissionKey = (name: string, teamId = '', date = new Date().toISOString().slice(0, 10)) =>
+  teamId ? `${teamId}:daily-submission-${date}-${name}` : `daily-submission-${date}-${name}`;
 
 export const MEMBERS: Member[] = [
   { name: '田中 一郎', status: '完了',    customers: [{ name: 'A社', situation: '完了' }, { name: 'B社', situation: '提案済み' }], summary: 'A社との商談クローズ。次回フォロー日程を確定済み。',     updatedAt: '10:30' },

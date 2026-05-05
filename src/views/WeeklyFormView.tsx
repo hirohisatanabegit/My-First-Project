@@ -24,7 +24,7 @@ const SELECT_CLS = INPUT_CLS;
 
 const WEEKLY_DRAFT_KEY = (name: string) => `weekly-draft-${name}`;
 
-export default function WeeklyFormView({ roster, goalOptions }: { roster: RosterMember[]; goalOptions: string[] }) {
+export default function WeeklyFormView({ roster, goalOptions, teamId }: { roster: RosterMember[]; goalOptions: string[]; teamId: string }) {
   const [member,     setMember]     = useState(roster[0]?.name ?? '');
   const [customers,  setCustomers]  = useState<CustomerRow[]>([
     { name: 'C社', goal: goalOptions[2] ?? goalOptions[0], priority: '高' },
@@ -74,7 +74,6 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
 
   const handleSubmit = () => {
     if (!validate()) return;
-    // 週次計画を localStorage に保存（日次フォームが読み込む）
     const submission: WeeklyPlanSubmission = {
       member,
       customers: customers
@@ -83,7 +82,7 @@ export default function WeeklyFormView({ roster, goalOptions }: { roster: Roster
       theme,
       submittedAt: new Date().toISOString(),
     };
-    localStorage.setItem(weeklyPlanKey(member), JSON.stringify(submission));
+    localStorage.setItem(weeklyPlanKey(member, teamId), JSON.stringify(submission));
     localStorage.removeItem(WEEKLY_DRAFT_KEY(member));
     setSubmitted(true);
   };

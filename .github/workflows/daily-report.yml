@@ -1,0 +1,57 @@
+name: 営業日次シグナルボード 自動レポート
+
+# ──────────────────────────────────────────────────────────
+# 【セットアップ手順】
+# GitHub リポジトリの Settings > Secrets and variables から以下を設定してください。
+#
+# Secrets（機密情報）:
+#   SENDGRID_API_KEY  … SendGrid の API キー
+#   APP_PASSCODE      … ダッシュボードのパスコード（デフォルト: 0000）
+#
+# Variables（非機密情報）:
+#   SITE_URL          … デプロイ先URL (例: https://USER.github.io/My-First-Project/)
+#   EMAIL_FROM        … 送信元アドレス (SendGrid で認証済みのもの)
+#   EMAIL_TO          … 送信先アドレス (カンマ区切りで複数可)
+#   EMAIL_SUBJECT     … 件名テンプレート ({date} → 日付に自動置換)
+#   TEAM_ID           … チームID (複数チーム運用時。省略可)
+# ──────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # 毎週月〜金 20:00 JST (= 11:00 UTC)
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+    # 手動実行ボタン（テスト送信・休日対応）
+
+permissions:
+  contents: read
+
+jobs:
+  send-daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js をセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: スクリプトの依存パッケージをインストール
+        run: npm install
+        working-directory: scripts
+
+      - name: スクリーンショット撮影 → メール送信
+        run: node capture-and-send.mjs
+        working-directory: scripts
+        env:
+          SITE_URL:          ${{ vars.SITE_URL }}
+          APP_PASSCODE:      ${{ secrets.APP_PASSCODE }}
+          SENDGRID_API_KEY:  ${{ secrets.SENDGRID_API_KEY }}
+          EMAIL_FROM:        ${{ vars.EMAIL_FROM }}
+          EMAIL_TO:          ${{ vars.EMAIL_TO }}
+          EMAIL_SUBJECT:     ${{ vars.EMAIL_SUBJECT }}
+          TEAM_ID:           ${{ vars.TEAM_ID }}

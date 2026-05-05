@@ -21,9 +21,9 @@ const draftKey = (name: string) => `daily-draft-${name}`;
 interface DraftData { status: Status; custSits: Record<string, Situation>; summary: string }
 
 /** 週次計画から今日の顧客リストを取得 */
-function getWeeklyCustomers(memberName: string): Array<{ name: string; situation: Situation }> {
+function getWeeklyCustomers(memberName: string, teamId: string): Array<{ name: string; situation: Situation }> {
   try {
-    const raw = localStorage.getItem(weeklyPlanKey(memberName));
+    const raw = localStorage.getItem(weeklyPlanKey(memberName, teamId));
     if (raw) {
       const plan: WeeklyPlanSubmission = JSON.parse(raw);
       return plan.customers.map(c => ({ name: c.name, situation: '未着手' as Situation }));
@@ -32,7 +32,7 @@ function getWeeklyCustomers(memberName: string): Array<{ name: string; situation
   return [];
 }
 
-export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
+export default function DailyFormView({ roster, teamId }: { roster: RosterMember[]; teamId: string }) {
   const [member,    setMember]    = useState(roster[0]?.name ?? '');
   const [status,    setStatus]    = useState<Status>('進行中');
   const [custSits,  setCustSits]  = useState<Record<string, Situation>>({});
@@ -84,17 +84,16 @@ export default function DailyFormView({ roster }: { roster: RosterMember[] }) {
 
   const handleSubmit = () => {
     if (!validate()) return;
-    // 今日の送信データを保存（ダッシュボードが読み込む）
     const submission: DailySubmission = {
       member, status, custSits, summary,
       submittedAt: new Date().toISOString(),
     };
-    localStorage.setItem(dailySubmissionKey(member), JSON.stringify(submission));
+    localStorage.setItem(dailySubmissionKey(member, teamId), JSON.stringify(submission));
     localStorage.removeItem(draftKey(member));
     setSubmitted(true);
   };
 
-  const customerList = getWeeklyCustomers(member);
+  const customerList = getWeeklyCustomers(member, teamId);
 
   if (submitted) {
     return (

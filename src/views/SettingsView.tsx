@@ -45,11 +45,13 @@ function SaveBanner({ onSave }: { onSave: () => void }) {
 export default function SettingsView({
   roster, setRoster,
   goalOptions, setGoalOptions,
+  teamId,
 }: {
   roster: RosterMember[];
   setRoster: (r: RosterMember[]) => void;
   goalOptions: string[];
   setGoalOptions: (opts: string[]) => void;
+  teamId: string;
 }) {
   // メンバー管理（ローカルコピー → 保存時に反映）
   const [members, setMembers] = useState<RosterMember[]>([...roster]);
@@ -400,7 +402,43 @@ export default function SettingsView({
         </div>
       </SectionCard>
 
-      {/* ── 5. アクセス設定 ── */}
+      {/* ── 5. チーム設定 ── */}
+      <SectionCard title="チーム設定（複数チーム運用）">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            URLに <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">?team=チームID</code> を付けることで、
+            チームごとにデータを完全分離できます。
+          </p>
+          <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-3 text-sm">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 mb-1">現在のチームID</p>
+              <p className="font-mono text-slate-800 text-base">
+                {teamId || <span className="text-slate-400 italic">デフォルト（チームIDなし）</span>}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 mb-1">チーム別URLの例</p>
+              <div className="space-y-1">
+                {['alpha', 'beta', 'tokyo'].map(id => {
+                  const base = window.location.origin + window.location.pathname;
+                  return (
+                    <a key={id} href={`${base}?team=${id}`} target="_blank" rel="noopener noreferrer"
+                      className="block font-mono text-xs text-blue-600 hover:underline truncate">
+                      {base}?team={id}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">
+            各チームのURLをブックマークして共有してください。
+            チームIDを変えるだけでメンバー・設定・データがすべて独立します。
+          </p>
+        </div>
+      </SectionCard>
+
+      {/* ── 6. アクセス設定 ── */}
       <SectionCard title="アクセス設定（パスコード）">
         <div className="space-y-4">
           <p className="text-sm text-slate-500">

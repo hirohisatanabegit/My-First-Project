@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import DashboardView from './views/DashboardView';
 import WeeklyFormView from './views/WeeklyFormView';
 import DailyFormView from './views/DailyFormView';
@@ -64,8 +64,19 @@ const TABS: { id: Tab; label: string; sub: string; icon: React.ReactNode }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [goalOptions, setGoalOptions] = useLocalStorage<string[]>('goalOptions', DEFAULT_GOAL_OPTIONS);
-  const [roster, setRoster]           = useLocalStorage<RosterMember[]>('roster', DEFAULT_ROSTER);
+
+  // URL パラメーター ?team=xxx でチームを切り替え（省略時は既存データと互換）
+  const teamId = useMemo(
+    () => new URLSearchParams(window.location.search).get('team') ?? '',
+    [],
+  );
+
+  // チームごとに localStorage キーを分離
+  const rosterKey     = teamId ? `${teamId}:roster`      : 'roster';
+  const goalKey       = teamId ? `${teamId}:goalOptions`  : 'goalOptions';
+
+  const [goalOptions, setGoalOptions] = useLocalStorage<string[]>(goalKey, DEFAULT_GOAL_OPTIONS);
+  const [roster, setRoster]           = useLocalStorage<RosterMember[]>(rosterKey, DEFAULT_ROSTER);
   const [passcode]                    = useLocalStorage<string>('cfg-passcode', '0000');
 
   // 認証状態（セッション: タブを閉じるまで維持）
@@ -137,13 +148,14 @@ export default function App() {
 
       {/* MAIN */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {tab === 'dashboard' && <DashboardView roster={roster} />}
-        {tab === 'weekly'    && <WeeklyFormView roster={roster} goalOptions={goalOptions} />}
-        {tab === 'daily'     && <DailyFormView roster={roster} />}
+        {tab === 'dashboard' && <DashboardView roster={roster} teamId={teamId} />}
+        {tab === 'weekly'    && <WeeklyFormView roster={roster} goalOptions={goalOptions} teamId={teamId} />}
+        {tab === 'daily'     && <DailyFormView roster={roster} teamId={teamId} />}
         {tab === 'settings'  && (
           <SettingsView
             roster={roster} setRoster={setRoster}
             goalOptions={goalOptions} setGoalOptions={setGoalOptions}
+            teamId={teamId}
           />
         )}
       </main>

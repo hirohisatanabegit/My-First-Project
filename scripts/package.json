@@ -1,0 +1,10 @@
+{
+  "name": "sales-dashboard-report-scripts",
+  "version": "1.0.0",
+  "description": "ダッシュボードのスクリーンショット撮影・Email送信スクリプト",
+  "type": "module",
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
+    "puppeteer": "^22.0.0"
+  }
+}

@@ -12,13 +12,13 @@ const ALL_STATUSES: (Status | 'すべて')[] = ['すべて', '未着手', '進�
 
 /** 名簿からアクティブメンバーを生成。
  *  優先順位: 今日の送信データ → 静的サンプル → デフォルト（未着手） */
-function buildActiveMembers(roster: RosterMember[]): Member[] {
+function buildActiveMembers(roster: RosterMember[], teamId: string): Member[] {
   return roster.map(r => {
     try {
-      const dailyRaw = localStorage.getItem(dailySubmissionKey(r.name));
+      const dailyRaw = localStorage.getItem(dailySubmissionKey(r.name, teamId));
       if (dailyRaw) {
         const sub: DailySubmission = JSON.parse(dailyRaw);
-        const weeklyRaw = localStorage.getItem(weeklyPlanKey(r.name));
+        const weeklyRaw = localStorage.getItem(weeklyPlanKey(r.name, teamId));
         const customers = weeklyRaw
           ? (JSON.parse(weeklyRaw) as WeeklyPlanSubmission).customers.map(c => ({
               name:      c.name,
@@ -222,7 +222,7 @@ function Page2({ counts, total, activeMembers }: {
 
 // ── メインコンポーネント ─────────────────────────────────────────────────
 
-export default function DashboardView({ roster }: { roster: RosterMember[] }) {
+export default function DashboardView({ roster, teamId }: { roster: RosterMember[]; teamId: string }) {
   const [page,   setPage]   = useState(0);
   const [filter, setFilter] = useState<Status | 'すべて'>('すべて');
   const [now, setNow] = useState(new Date());
@@ -232,7 +232,7 @@ export default function DashboardView({ roster }: { roster: RosterMember[] }) {
     return () => clearInterval(id);
   }, []);
 
-  const activeMembers = buildActiveMembers(roster);
+  const activeMembers = buildActiveMembers(roster, teamId);
 
   const counts: Record<Status, number> = {
     '未着手':  activeMembers.filter(m => m.status === '未着手').length,
